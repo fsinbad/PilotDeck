@@ -73,9 +73,9 @@ import { describeWebProject, listWebProjects } from "../web/server/listProjects.
 import { BackgroundTaskRuntime, type BackgroundTaskCompletionEvent } from "../task/runtime/BackgroundTaskRuntime.js";
 import { createBuiltinRegistry, createPlanFileManager, filterAvailableTools } from "../tool/index.js";
 import type {
-  PilotDeckElicitationChannel,
-  PilotDeckToolDefinition,
-  PilotDeckUnavailableToolDiagnostic,
+  NukemAIElicitationChannel,
+  NukemAIToolDefinition,
+  NukemAIUnavailableToolDiagnostic,
   ToolRegistry,
 } from "../tool/index.js";
 import { createRouterRuntime, type RouterRuntime } from "../router/index.js";
@@ -93,7 +93,7 @@ export type CreateLocalGatewayOptions = {
   env?: Record<string, string | undefined>;
   permissionMode?: AgentRuntimeConfig["permissionMode"];
   /** Tools merged into every per-project ToolRegistry. */
-  extraTools?: PilotDeckToolDefinition[];
+  extraTools?: NukemAIToolDefinition[];
   /** Per-sessionKey config overrides (cwd / permissionMode). */
   sessionOverrides?: SessionConfigOverrides;
   /** Optional Cron runtime controller exposed through Gateway management methods. */
@@ -128,7 +128,7 @@ export type CreateLocalGatewayOptions = {
 };
 
 export type SubsystemUpdate = {
-  extraTools: PilotDeckToolDefinition[];
+  extraTools: NukemAIToolDefinition[];
   sessionOverrides?: SessionConfigOverrides;
   cron?: GatewayCronController;
   alwaysOnApply?: InProcessGatewayOptions["alwaysOnApply"];
@@ -173,7 +173,7 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
     onError: (scope, error) => {
       // eslint-disable-next-line no-console
       console.warn(
-        `[pilotdeck] Extension watcher failed for ${describeExtensionScope(scope)}:`,
+        `[nukemai] Extension watcher failed for ${describeExtensionScope(scope)}:`,
         error.message,
       );
     },
@@ -213,11 +213,11 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
     }
     if (changeClasses.every((c) => c === "restart-required")) {
       // eslint-disable-next-line no-console
-      console.warn("[pilotdeck] Config change requires process restart:", changedPaths.join(", "));
+      console.warn("[nukemai] Config change requires process restart:", changedPaths.join(", "));
       return;
     }
     // eslint-disable-next-line no-console
-    console.log("[pilotdeck] Config reloaded, invalidating runtimes:", changedPaths.join(", "));
+    console.log("[nukemai] Config reloaded, invalidating runtimes:", changedPaths.join(", "));
     registry.invalidate();
     if (memoryDiagnosticsEnabled) {
       logGatewayMemoryDiagnostic({
@@ -266,7 +266,7 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
     now,
     serverInfo: { mode: "in_process", projectKey: projectRoot },
     telemetry,
-    toolResultsDir: resolve(tmpdir(), "pilotdeck-tool-output", process.pid.toString()),
+    toolResultsDir: resolve(tmpdir(), "nukemai-tool-output", process.pid.toString()),
     cron: options.cron,
     skillManager,
     setSessionCwd: (sessionKey, cwd) => registry.setSessionCwd(sessionKey, cwd),
@@ -321,14 +321,14 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
       if (input?.projectKey) {
         // eslint-disable-next-line no-console
         console.log(
-          `[pilotdeck] Extensions reload requested for project ${input.projectKey}:`,
+          `[nukemai] Extensions reload requested for project ${input.projectKey}:`,
           changedPaths.join(", ") || "(manual)",
         );
         registry.invalidate(input.projectKey);
         router?.markProjectDirty(input.projectKey, "extension_changed");
       } else {
         // eslint-disable-next-line no-console
-        console.log("[pilotdeck] Extensions reload requested for all runtimes:", changedPaths.join(", ") || "(manual)");
+        console.log("[nukemai] Extensions reload requested for all runtimes:", changedPaths.join(", ") || "(manual)");
         registry.invalidate();
         router?.markAllDirty("extension_changed");
       }
@@ -401,7 +401,7 @@ type ProjectRuntimeRegistryOptions = {
   env: Record<string, string | undefined>;
   permissionMode: AgentRuntimeConfig["permissionMode"];
   now: () => Date;
-  extraTools?: PilotDeckToolDefinition[];
+  extraTools?: NukemAIToolDefinition[];
   sessionOverrides?: SessionConfigOverrides;
   additionalWorkingDirectories?: string[];
   /** @internal Test hook from `CreateLocalGatewayOptions.__testModelFactory`. */
@@ -419,7 +419,7 @@ type ProjectRuntime = {
   router: RouterRuntime;
   pluginRuntime: PluginRuntime;
   tools: ToolRegistry;
-  unavailableTools?: PilotDeckUnavailableToolDiagnostic[];
+  unavailableTools?: NukemAIUnavailableToolDiagnostic[];
   projectStorage: GatewayProjectStorageOptions;
   /** Per-project background task runtime (shared across sessions). C5. */
   backgroundTasks: BackgroundTaskRuntime;
@@ -444,7 +444,7 @@ type ProjectRuntime = {
    * these specs so that e.g. browser-use gets an isolated process per
    * session.  Populated during `ensureMcpReady()`.
    */
-  perSessionServerSpecs?: import("../mcp/protocol/types.js").PilotDeckMcpServerSpec[];
+  perSessionServerSpecs?: import("../mcp/protocol/types.js").NukemAIMcpServerSpec[];
 };
 
 class ProjectRuntimeRegistry {
@@ -459,7 +459,7 @@ class ProjectRuntimeRegistry {
    *     push session-scoped allow rules on `remember=true` and have the
    *     very next `decide()` call inside this turn see them.
    * Without this fallback, remote-gateway clients (Web UI talking to
-   * `pilotdeck server`) wouldn't be able to round-trip permission
+   * `nukemai server`) wouldn't be able to round-trip permission
    * prompts because they can't reach into the server's `sessionOverrides`
    * map from outside the process.
    */
@@ -476,7 +476,7 @@ class ProjectRuntimeRegistry {
    */
   private readonly sessionMcpRuntimes = new Map<string, McpRuntime>();
 
-  private _extraTools: PilotDeckToolDefinition[];
+  private _extraTools: NukemAIToolDefinition[];
   private _sessionOverrides: SessionConfigOverrides | undefined;
   private readonly sharedSessionStore = new SessionRouterStore({
     now: () => this.options.now().getTime(),
@@ -540,7 +540,7 @@ class ProjectRuntimeRegistry {
         try {
           appendFileSync(eventsPath, JSON.stringify(event) + "\n");
         } catch { /* best-effort, never crash the agent loop */ }
-        if (event.type === "pilotdeck_router_retry_progress") {
+        if (event.type === "nukemai_router_retry_progress") {
           try {
             self.gateway?.broadcastRetryProgress(event);
           } catch { /* best-effort */ }
@@ -616,7 +616,7 @@ class ProjectRuntimeRegistry {
    * map. Also invalidates cached runtimes.
    */
   updateSubsystems(config: {
-    extraTools: PilotDeckToolDefinition[];
+    extraTools: NukemAIToolDefinition[];
     sessionOverrides?: SessionConfigOverrides;
   }): void {
     this._extraTools = config.extraTools;
@@ -758,7 +758,7 @@ class ProjectRuntimeRegistry {
           });
           // eslint-disable-next-line no-console
           console.warn(
-            `[pilotdeck] memory maintenance failed for project ${runtime.projectRoot}:`,
+            `[nukemai] memory maintenance failed for project ${runtime.projectRoot}:`,
             error instanceof Error ? error.message : String(error),
           );
         }
@@ -783,7 +783,7 @@ class ProjectRuntimeRegistry {
         const configServers = loadMcpServerConfig(runtime.projectRoot, this.options.pilotHome);
         for (const diagnostic of configServers.diagnostics) {
           // eslint-disable-next-line no-console
-          console.warn(`[pilotdeck] Ignoring invalid MCP config ${diagnostic.path}: ${diagnostic.message}`);
+          console.warn(`[nukemai] Ignoring invalid MCP config ${diagnostic.path}: ${diagnostic.message}`);
         }
         const rawServers = {
           ...runtime.pluginRuntime.mcpServers(),
@@ -809,7 +809,7 @@ class ProjectRuntimeRegistry {
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn(
-          `[pilotdeck] MCP runtime startup partial-failed for project ${runtime.projectRoot}:`,
+          `[nukemai] MCP runtime startup partial-failed for project ${runtime.projectRoot}:`,
           (err as Error).message,
         );
       }
@@ -874,7 +874,7 @@ class ProjectRuntimeRegistry {
         if (spec.transport === "stdio" && spec.id === "browser-use") {
           const outDir = joinPath(
             runtime.projectRoot,
-            ".pilotdeck",
+            ".nukemai",
             "browser_screenshots",
             sanitizeSessionIdForPath(context.sessionKey),
           );
@@ -901,14 +901,14 @@ class ProjectRuntimeRegistry {
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn(
-          `[pilotdeck] Per-session MCP startup failed for ${context.sessionKey}:`,
+          `[nukemai] Per-session MCP startup failed for ${context.sessionKey}:`,
           (err as Error).message,
         );
       }
     } else if (perSpecs && perSpecs.length > 0) {
       // eslint-disable-next-line no-console
       console.warn(
-        `[pilotdeck] Per-session MCP limit reached (${maxInstances}). ` +
+        `[nukemai] Per-session MCP limit reached (${maxInstances}). ` +
         `Session ${context.sessionKey} will share the project-level browser instance.`,
       );
     }
@@ -1115,7 +1115,7 @@ class ProjectRuntimeRegistry {
               emit: (event) => gw.emitForSession(context.sessionKey, event),
               dispatchHook: (hookEvent, payload) => {
                 lifecycle.dispatch({
-                  event: hookEvent as import("../extension/hooks/protocol/events.js").PilotDeckHookEvent,
+                  event: hookEvent as import("../extension/hooks/protocol/events.js").NukemAIHookEvent,
                   baseInput: { sessionId: context.sessionKey, transcriptPath: "", cwd: projectRoot },
                   payload,
                   matchQuery: hookEvent,
@@ -1227,7 +1227,7 @@ class ProjectRuntimeRegistry {
     } catch {
       maxContextTokens = agent.maxContextTokens;
     }
-    maxOutputTokens = readPositiveIntegerEnv(this.options.env.PILOTDECK_MAX_OUTPUT_TOKENS)
+    maxOutputTokens = readPositiveIntegerEnv(this.options.env.NUKEMAI_MAX_OUTPUT_TOKENS)
       ?? agent.maxOutputTokens
       ?? maxOutputTokens;
     return {
@@ -1287,14 +1287,14 @@ function handleExtensionWatchEvent(
   const changed = event.changedPaths.join(", ");
   if (event.scope.kind === "global") {
     // eslint-disable-next-line no-console
-    console.log("[pilotdeck] Extensions changed, invalidating all runtimes:", changed);
+    console.log("[nukemai] Extensions changed, invalidating all runtimes:", changed);
     registry.invalidate();
     router?.markAllDirty("extension_changed");
     return;
   }
   // eslint-disable-next-line no-console
   console.log(
-    `[pilotdeck] Extensions changed for project ${event.scope.projectRoot}, invalidating runtime:`,
+    `[nukemai] Extensions changed for project ${event.scope.projectRoot}, invalidating runtime:`,
     changed,
   );
   registry.invalidate(event.scope.projectRoot);
@@ -1305,7 +1305,7 @@ function describeExtensionScope(scope: ExtensionWatchEvent["scope"]): string {
   return scope.kind === "global" ? "global extensions" : `project extensions (${scope.projectRoot})`;
 }
 
-function createAutoElicitationChannel(): PilotDeckElicitationChannel {
+function createAutoElicitationChannel(): NukemAIElicitationChannel {
   return {
     async askUser(request) {
       const answers: Record<string, string | string[]> = {};

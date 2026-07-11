@@ -6,9 +6,9 @@ import { findCanonicalProjectRoot } from "../session/worktree/findCanonicalProje
 
 export type PilotPathEnv = Record<string, string | undefined>;
 
-export const DEFAULT_PILOT_HOME = "~/.pilotdeck";
-export const PILOT_CONFIG_FILE_NAME = "pilotdeck.yaml";
-export const PILOT_PROJECT_DIR_NAME = ".pilotdeck";
+export const DEFAULT_PILOT_HOME = "~/.nukemai";
+export const PILOT_CONFIG_FILE_NAME = "nukemai.yaml";
+export const PILOT_PROJECT_DIR_NAME = ".nukemai";
 
 export type PilotExtensionPaths = {
   globalPluginsDir: string;

@@ -3,11 +3,11 @@ import { discoverPluginPaths, discoverSkillPaths } from "../discovery/discoverLo
 import { loadPluginFromPath, loadSkillFromPath } from "../loading/PluginLoader.js";
 import { loadPluginHooks } from "../loading/PluginHookLoader.js";
 import type { LoadedPluginCommand } from "../loading/PluginCommandLoader.js";
-import type { PilotDeckLoadedPlugin } from "../protocol/plugin.js";
+import type { NukemAILoadedPlugin } from "../protocol/plugin.js";
 import { PluginRegistry } from "./PluginRegistry.js";
 import { truncateMcpInstructionString } from "./truncateMcpString.js";
-import type { PilotDeckHooksSettings } from "../../hooks/protocol/settings.js";
-import type { PilotDeckCustomRouter } from "../../../router/customRouter/customRouter.js";
+import type { NukemAIHooksSettings } from "../../hooks/protocol/settings.js";
+import type { NukemAICustomRouter } from "../../../router/customRouter/customRouter.js";
 
 /**
  * Static MCP server contribution shape callers can rely on. Manifests load
@@ -15,7 +15,7 @@ import type { PilotDeckCustomRouter } from "../../../router/customRouter/customR
  * this type is *advisory* — the runtime only reads `instructions` and falls
  * back gracefully when missing.
  */
-export type PilotDeckMcpServerStaticSpec = {
+export type NukemAIMcpServerStaticSpec = {
   instructions?: string;
   [key: string]: unknown;
 };
@@ -25,7 +25,7 @@ export type PilotDeckMcpServerStaticSpec = {
  * as a stricter alias of {@link PluginMcpInstruction} so callers that only
  * care about *populated* entries keep a non-optional `instructions` field.
  */
-export type PilotDeckMcpInstructionEntry = {
+export type NukemAIMcpInstructionEntry = {
   serverName: string;
   instructions: string;
 };
@@ -33,15 +33,15 @@ export type PilotDeckMcpInstructionEntry = {
 export type PluginRuntimeOptions = {
   projectRoot: string;
   pilotHome: string;
-  builtinPlugins?: PilotDeckLoadedPlugin[];
+  builtinPlugins?: NukemAILoadedPlugin[];
   builtinPluginsEnabled?: Record<string, boolean>;
 };
 
 export type PluginRefreshResult = {
-  previous: PilotDeckLoadedPlugin[];
-  next: PilotDeckLoadedPlugin[];
-  added: PilotDeckLoadedPlugin[];
-  removed: PilotDeckLoadedPlugin[];
+  previous: NukemAILoadedPlugin[];
+  next: NukemAILoadedPlugin[];
+  added: NukemAILoadedPlugin[];
+  removed: NukemAILoadedPlugin[];
 };
 
 export type PluginCommandContribution = {
@@ -63,11 +63,11 @@ export type PluginMcpInstruction = {
 };
 
 export type PluginContributionSnapshot = {
-  plugins: PilotDeckLoadedPlugin[];
+  plugins: NukemAILoadedPlugin[];
   commands: PluginCommandContribution[];
   skills: PluginSkillContribution[];
   outputStyles: LoadedPluginCommand[];
-  hooks: PilotDeckHooksSettings;
+  hooks: NukemAIHooksSettings;
   mcpServers: Record<string, unknown>;
   lspServers: Record<string, unknown>;
   mcpInstructions: PluginMcpInstruction[];
@@ -78,7 +78,7 @@ export class PluginRuntime {
 
   constructor(private readonly options: PluginRuntimeOptions) {}
 
-  snapshot(): PilotDeckLoadedPlugin[] {
+  snapshot(): NukemAILoadedPlugin[] {
     return this.registry.list();
   }
 
@@ -97,8 +97,8 @@ export class PluginRuntime {
    * instructions on top via the same `getAllMcpInstructions` aggregator
    * surface used by `PluginRuntimeExtensionResolver`.
    */
-  getAllMcpInstructions(): PilotDeckMcpInstructionEntry[] {
-    const entries: PilotDeckMcpInstructionEntry[] = [];
+  getAllMcpInstructions(): NukemAIMcpInstructionEntry[] {
+    const entries: NukemAIMcpInstructionEntry[] = [];
     const seen = new Set<string>();
     for (const plugin of this.registry.list()) {
       const servers = plugin.mcpServers;
@@ -106,7 +106,7 @@ export class PluginRuntime {
       for (const [serverName, raw] of Object.entries(servers)) {
         if (seen.has(serverName)) continue;
         if (!raw || typeof raw !== "object") continue;
-        const candidate = (raw as PilotDeckMcpServerStaticSpec).instructions;
+        const candidate = (raw as NukemAIMcpServerStaticSpec).instructions;
         if (typeof candidate !== "string") continue;
         const trimmed = candidate.trim();
         if (trimmed.length === 0) continue;
@@ -147,7 +147,7 @@ export class PluginRuntime {
     return this.snapshotContributions().skills;
   }
 
-  lookupRouter(extensionId: string): PilotDeckCustomRouter | undefined {
+  lookupRouter(extensionId: string): NukemAICustomRouter | undefined {
     for (const plugin of this.registry.list()) {
       for (const contribution of plugin.routerContributions ?? []) {
         if (contribution.id !== extensionId) {
@@ -177,7 +177,7 @@ export class PluginRuntime {
     return undefined;
   }
 
-  async refresh(): Promise<PilotDeckLoadedPlugin[]> {
+  async refresh(): Promise<NukemAILoadedPlugin[]> {
     return (await this.refreshWithReport()).next;
   }
 
@@ -220,23 +220,23 @@ export class PluginRuntime {
   }
 }
 
-function isLoadedPlugin(value: PilotDeckLoadedPlugin | undefined): value is PilotDeckLoadedPlugin {
+function isLoadedPlugin(value: NukemAILoadedPlugin | undefined): value is NukemAILoadedPlugin {
   return value !== undefined;
 }
 
 function enabledBuiltinPlugins(
-  plugins: PilotDeckLoadedPlugin[],
+  plugins: NukemAILoadedPlugin[],
   enabled: Record<string, boolean>,
-): PilotDeckLoadedPlugin[] {
+): NukemAILoadedPlugin[] {
   return plugins.filter((plugin) => plugin.source !== "builtin" || enabled[plugin.name] !== false);
 }
 
-function hasPlugin(plugins: PilotDeckLoadedPlugin[], plugin: PilotDeckLoadedPlugin): boolean {
+function hasPlugin(plugins: NukemAILoadedPlugin[], plugin: NukemAILoadedPlugin): boolean {
   return plugins.some((candidate) => candidate.name === plugin.name && candidate.source === plugin.source);
 }
 
 function toCommandContribution(
-  plugin: PilotDeckLoadedPlugin,
+  plugin: NukemAILoadedPlugin,
   command: LoadedPluginCommand,
 ): PluginCommandContribution {
   return {
@@ -251,7 +251,7 @@ function toCommandContribution(
 }
 
 function toSkillContribution(
-  plugin: PilotDeckLoadedPlugin,
+  plugin: NukemAILoadedPlugin,
   skill: LoadedPluginCommand,
 ): PluginSkillContribution {
   return {

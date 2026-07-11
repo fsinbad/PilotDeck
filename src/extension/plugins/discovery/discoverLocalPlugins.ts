@@ -1,14 +1,14 @@
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
-import type { PilotDeckPluginSourceKind } from "../protocol/plugin.js";
+import type { NukemAIPluginSourceKind } from "../protocol/plugin.js";
 
 export type DiscoveredPluginPath = {
   path: string;
-  source: PilotDeckPluginSourceKind;
+  source: NukemAIPluginSourceKind;
 };
 
 export async function discoverPluginPaths(
-  directories: Array<{ path: string; source: PilotDeckPluginSourceKind }>,
+  directories: Array<{ path: string; source: NukemAIPluginSourceKind }>,
 ): Promise<DiscoveredPluginPath[]> {
   const discovered: DiscoveredPluginPath[] = [];
   for (const directory of directories) {
@@ -38,7 +38,7 @@ export async function discoverPluginPaths(
  * Mirrors the legacy standalone skill directory convention.
  */
 export async function discoverSkillPaths(
-  directories: Array<{ path: string; source: PilotDeckPluginSourceKind }>,
+  directories: Array<{ path: string; source: NukemAIPluginSourceKind }>,
 ): Promise<DiscoveredPluginPath[]> {
   const discovered: DiscoveredPluginPath[] = [];
   for (const directory of directories) {

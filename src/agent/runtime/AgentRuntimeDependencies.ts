@@ -1,10 +1,10 @@
 import type { CanonicalMessage, CanonicalModelEvent, CanonicalModelRequest } from "../../model/index.js";
 import type {
-  PilotDeckElicitationChannel,
-  PilotDeckToolAuditRecorder,
-  PilotDeckFileUpdateNotifier,
-  PilotDeckToolFileHistorySink,
-  PilotDeckToolScheduler,
+  NukemAIElicitationChannel,
+  NukemAIToolAuditRecorder,
+  NukemAIFileUpdateNotifier,
+  NukemAIToolFileHistorySink,
+  NukemAIToolScheduler,
   ToolRegistry,
 } from "../../tool/index.js";
 import type { PlanFileManager } from "../../tool/builtin/planFile.js";
@@ -85,7 +85,7 @@ export type AgentSubagentTranscriptHooks = {
 export type AgentRuntimeDependencies = {
   router: AgentRouterRuntime;
   tools: {
-    scheduler: PilotDeckToolScheduler;
+    scheduler: NukemAIToolScheduler;
     registry: ToolRegistry;
   };
   context?: AgentContextRuntime;
@@ -106,30 +106,30 @@ export type AgentRuntimeDependencies = {
   getModelTokenLimits?: (provider: string, model: string) => { maxContextTokens: number; maxOutputTokens: number } | undefined;
   now?: () => Date;
   uuid?: () => string;
-  auditRecorder?: PilotDeckToolAuditRecorder;
+  auditRecorder?: NukemAIToolAuditRecorder;
   lifecycle?: LifecycleRuntime;
   /** C3 sidechain transcript hooks (optional). */
   subagentTranscript?: AgentSubagentTranscriptHooks;
   /**
-   * Elicitation channel — wired into the per-tool `PilotDeckToolRuntimeContext`
+   * Elicitation channel — wired into the per-tool `NukemAIToolRuntimeContext`
    * so `ask_user_question` (B1) can drive the gateway. When omitted, the
    * tool returns a `mcp_unavailable` error instead of crashing.
    */
-  elicitation?: PilotDeckElicitationChannel;
+  elicitation?: NukemAIElicitationChannel;
   /**
    * File-history sink — wired into the per-tool runtime context so
    * `edit_file` / `write_file` (C4) snapshot the file before mutation.
    * `FileHistoryStore` directly satisfies this contract.
    */
-  fileHistory?: PilotDeckToolFileHistorySink;
+  fileHistory?: NukemAIToolFileHistorySink;
   /**
    * Optional sink for propagating successful file writes to editor / LSP
    * integrations. When absent, write_file still succeeds and performs no
    * post-write host notifications.
    */
-  fileUpdateNotifier?: PilotDeckFileUpdateNotifier;
+  fileUpdateNotifier?: NukemAIFileUpdateNotifier;
   /**
-   * Plan file manager — resolves the project-local `.pilotdeck/plans`
+   * Plan file manager — resolves the project-local `.nukemai/plans`
    * directory and reads explicitly submitted plan documents for
    * `enter_plan_mode` / `exit_plan_mode`. Absent in headless / test runtimes.
    */

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-import type { ClaudeWorkStatus, CompactProgress, PendingPermissionRequest, PilotDeckWorkStatus } from '../types/types';
+import type { ClaudeWorkStatus, CompactProgress, PendingPermissionRequest, NukemAIWorkStatus } from '../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../types/app';
 import type { SessionStore, NormalizedMessage } from '../../../stores/useSessionStore';
 import { useWebSocket } from '../../../contexts/WebSocketContext';
@@ -94,7 +94,7 @@ interface UseChatRealtimeHandlersArgs {
   setCanAbortSession: (canAbort: boolean) => void;
   setIsAborting: (aborting: boolean) => void;
   setClaudeStatus: (status: ClaudeWorkStatus | null) => void;
-  setPilotDeckStatus: (status: PilotDeckWorkStatus | null) => void;
+  setNukemAIStatus: (status: NukemAIWorkStatus | null) => void;
   setTokenBudget: (budget: Record<string, unknown> | null) => void;
   setPendingPermissionRequests: Dispatch<SetStateAction<PendingPermissionRequest[]>>;
   pendingViewSessionRef: MutableRefObject<PendingViewSession | null>;
@@ -120,7 +120,7 @@ export function useChatRealtimeHandlers({
   setCanAbortSession,
   setIsAborting,
   setClaudeStatus,
-  setPilotDeckStatus,
+  setNukemAIStatus,
   setTokenBudget,
   setPendingPermissionRequests,
   pendingViewSessionRef,
@@ -248,7 +248,7 @@ export function useChatRealtimeHandlers({
               compactProgress: status.compactProgress || status.compact_progress || null,
             };
             setClaudeStatus(statusInfo);
-            setPilotDeckStatus(statusInfo);
+            setNukemAIStatus(statusInfo);
             setIsLoading(true);
             setCanAbortSession(statusInfo.can_interrupt);
             return;
@@ -270,7 +270,7 @@ export function useChatRealtimeHandlers({
             setIsLoading(false);
             setCanAbortSession(false);
             setClaudeStatus(null);
-            setPilotDeckStatus(null);
+            setNukemAIStatus(null);
           }
           return;
         }
@@ -492,7 +492,7 @@ export function useChatRealtimeHandlers({
           setCanAbortSession(false);
           setIsAborting(false);
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNukemAIStatus(null);
         }
         if (sid) {
           setPendingPermissionRequests((prev) =>
@@ -500,7 +500,7 @@ export function useChatRealtimeHandlers({
           );
           onSessionInactive?.(sid);
           onSessionNotProcessing?.(sid);
-          window.dispatchEvent(new CustomEvent('pilotdeck:agent-turn-complete', {
+          window.dispatchEvent(new CustomEvent('nukemai:agent-turn-complete', {
             detail: {
               sessionId: sid,
               projectName: selectedProject?.name,
@@ -555,7 +555,7 @@ export function useChatRealtimeHandlers({
           setCanAbortSession(false);
           setIsAborting(false);
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNukemAIStatus(null);
         }
         if (sid) {
           activeTurnReplaySignatureRef.current.delete(sid);
@@ -586,7 +586,7 @@ export function useChatRealtimeHandlers({
         setIsLoading(true);
         setCanAbortSession(true);
         setClaudeStatus({ text: 'Waiting for permission', tokens: 0, can_interrupt: true });
-        setPilotDeckStatus({ text: 'Waiting for permission', tokens: 0, can_interrupt: true });
+        setNukemAIStatus({ text: 'Waiting for permission', tokens: 0, can_interrupt: true });
         break;
       }
 
@@ -606,7 +606,7 @@ export function useChatRealtimeHandlers({
           setTokenBudget(msg.tokenBudget as Record<string, unknown>);
         } else if (msg.text === 'clear_status') {
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNukemAIStatus(null);
         } else if (msg.text) {
           setClaudeStatus({
             text: msg.text,
@@ -614,7 +614,7 @@ export function useChatRealtimeHandlers({
             can_interrupt: msg.canInterrupt !== undefined ? msg.canInterrupt : true,
             compactProgress: msg.compactProgress || msg.compact_progress || null,
           });
-          setPilotDeckStatus({
+          setNukemAIStatus({
             text: msg.text,
             tokens: msg.tokens || 0,
             can_interrupt: msg.canInterrupt !== undefined ? msg.canInterrupt : true,
@@ -631,7 +631,7 @@ export function useChatRealtimeHandlers({
         onSessionProcessing?.(sid);
         if (isForActiveView) {
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNukemAIStatus(null);
           setIsLoading(true);
           setCanAbortSession(true);
         }
@@ -652,7 +652,7 @@ export function useChatRealtimeHandlers({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNukemAIStatus,
     setTokenBudget,
     setPendingPermissionRequests,
     pendingViewSessionRef,

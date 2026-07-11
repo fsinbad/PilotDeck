@@ -10,14 +10,14 @@ import {
   type FeishuSessionMapperState, type WeixinSessionMapperState, type QQSessionMapperState, type WeComSessionMapperState,
 } from "../adapters/index.js";
 import {
-  migrateSkillsToPilotDeck,
+  migrateSkillsToNukemAI,
   type SkillMigrationConflictMode,
   type SkillMigrationItem,
   type SkillMigrationSourceKind,
 } from "../extension/skills/index.js";
 import { loadPilotConfig, resolvePilotHome } from "../pilot/index.js";
 import { createLocalGateway } from "./createLocalGateway.js";
-import { startPilotDeckServer } from "./pilotdeckServer.js";
+import { startNukemAIServer } from "./nukemaiServer.js";
 import { installGlobalProxy, reinstallGlobalProxy } from "./proxy.js";
 import { createShutdownAndExit } from "./shutdownCoordinator.js";
 import { createTelemetryCollector } from "../telemetry/index.js";
@@ -37,7 +37,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
     });
 
     // Apply proxy from config (env-based proxy from top-level installGlobalProxy
-    // takes precedence; this fills in when only pilotdeck.yaml has a proxy).
+    // takes precedence; this fills in when only nukemai.yaml has a proxy).
     if (snapshot.config.proxy?.url) {
       await installGlobalProxy(snapshot.config.proxy.url);
     }
@@ -174,7 +174,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
           .then(() => handleAdapterHotReload(event.nextSnapshot.config))
           .catch((err) =>
             console.warn(
-              `[pilotdeck] adapter hot-reload failed: ${err instanceof Error ? err.message : String(err)}`,
+              `[nukemai] adapter hot-reload failed: ${err instanceof Error ? err.message : String(err)}`,
             ),
           );
       }
@@ -185,7 +185,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
         .then(() => handleSubsystemReload(aoChanged, cronChanged, event.nextSnapshot.config))
         .catch((err) =>
           console.warn(
-            `[pilotdeck] subsystem reload failed: ${err instanceof Error ? err.message : String(err)}`,
+            `[nukemai] subsystem reload failed: ${err instanceof Error ? err.message : String(err)}`,
           ),
         );
     });
@@ -238,7 +238,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
       const parts: string[] = [];
       if (aoChanged) parts.push(`always-on=${alwaysOn ? "started" : "stopped"}`);
       if (cronChanged) parts.push(`cron=${cron ? "started" : "stopped"}`);
-      console.log(`[pilotdeck] Subsystem hot-reload complete: ${parts.join(", ")}`);
+      console.log(`[nukemai] Subsystem hot-reload complete: ${parts.join(", ")}`);
     }
 
     // --- Channel state persistence ---
@@ -249,7 +249,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
 
     // --- Adapter hot-reload ---
 
-    let serverRef: Awaited<ReturnType<typeof startPilotDeckServer>> | undefined;
+    let serverRef: Awaited<ReturnType<typeof startNukemAIServer>> | undefined;
 
     async function handleAdapterHotReload(config: (typeof snapshot)["config"]): Promise<void> {
       if (!serverRef) return;
@@ -316,13 +316,13 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
       }
 
       if (parts.length) {
-        console.log(`[pilotdeck] Adapter hot-reload complete: ${parts.join(", ")}`);
+        console.log(`[nukemai] Adapter hot-reload complete: ${parts.join(", ")}`);
       }
     }
 
     // --- Server startup ---
 
-    const envPort = Number.parseInt(env.PILOTDECK_GATEWAY_PORT ?? "", 10);
+    const envPort = Number.parseInt(env.NUKEMAI_GATEWAY_PORT ?? "", 10);
     const extraChannels = await loadEnabledChannels(snapshot.config.adapters);
     const feishuCfg = snapshot.config.adapters?.feishu;
     const savedFeishuState = await channelStatePersistence.load<FeishuSessionMapperState>("feishu");
@@ -370,7 +370,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
         })
       : undefined;
     const allChannels = [...extraChannels, ...(wecomChannel ? [wecomChannel] : [])];
-    const server = await startPilotDeckServer({
+    const server = await startNukemAIServer({
       gateway,
       port: readPort(argv) ?? (Number.isFinite(envPort) ? envPort : 18789),
       staticAssetsPath: resolve(projectRoot, "ui/dist"),
@@ -383,7 +383,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
     serverRef = server;
     bindServer(server);
     deferredBroadcast = (name, payload) => server.broadcastNotification(name, payload);
-    console.log(`PilotDeck server listening: ${server.url}`);
+    console.log(`NukemAI server listening: ${server.url}`);
     console.log(`WebSocket: ${server.wsUrl}`);
     if (server.tokenPath) {
       console.log(`Token: ${server.tokenPath}`);
@@ -426,7 +426,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
       await runGatewaySetup(argv.slice(2));
       return;
     }
-    console.error("Usage: pilotdeck gateway setup [feishu|weixin|wecom]");
+    console.error("Usage: nukemai gateway setup [feishu|weixin|wecom]");
     process.exitCode = 1;
     return;
   }
@@ -454,7 +454,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
 
   if (command === "tui") {
     if (!process.stdin.isTTY) {
-      console.error("pilotdeck tui requires an interactive terminal.");
+      console.error("nukemai tui requires an interactive terminal.");
       process.exitCode = 1;
       return;
     }
@@ -467,14 +467,14 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
       await new TuiChannel({
         projectKey: process.cwd(),
         cwd: process.cwd(),
-        model: "PilotDeck",
+        model: "NukemAI",
         probe: { url: probeUrl },
       }).start({ gateway: local });
     } catch (error) {
       await new TuiChannel({
         projectKey: process.cwd(),
         cwd: process.cwd(),
-        model: "PilotDeck",
+        model: "NukemAI",
         probe: { url: probeUrl },
       }).start({ gateway: fallbackGateway });
     }
@@ -546,7 +546,7 @@ async function handleUpdateCommand(argv: string[]): Promise<void> {
 async function handleCronCommand(argv: string[]): Promise<void> {
   const gateway = await connectRemoteGatewayIfAvailable();
   if (!gateway) {
-    console.error("pilotdeck cron requires a running pilotdeck server.");
+    console.error("nukemai cron requires a running nukemai server.");
     process.exitCode = 1;
     return;
   }
@@ -565,7 +565,7 @@ async function handleCronCommand(argv: string[]): Promise<void> {
     const once = readStringFlag(argv, "--once");
     const cron = readStringFlag(argv, "--cron");
     if (!message || !sessionKey || (!once && !cron)) {
-      console.error("Usage: pilotdeck cron create --session <sessionKey> --message <text> (--once <iso> | --cron <expr>)");
+      console.error("Usage: nukemai cron create --session <sessionKey> --message <text> (--once <iso> | --cron <expr>)");
       process.exitCode = 1;
       return;
     }
@@ -583,7 +583,7 @@ async function handleCronCommand(argv: string[]): Promise<void> {
   if (command === "delete") {
     const taskId = argv[1] ?? readStringFlag(argv, "--task");
     if (!taskId) {
-      console.error("Usage: pilotdeck cron delete <taskId> [--stop-running]");
+      console.error("Usage: nukemai cron delete <taskId> [--stop-running]");
       process.exitCode = 1;
       return;
     }
@@ -595,7 +595,7 @@ async function handleCronCommand(argv: string[]): Promise<void> {
     const taskId = argv[1] ?? readStringFlag(argv, "--task");
     const runId = readStringFlag(argv, "--run");
     if (!taskId && !runId) {
-      console.error("Usage: pilotdeck cron stop <taskId> or pilotdeck cron stop --run <runId>");
+      console.error("Usage: nukemai cron stop <taskId> or nukemai cron stop --run <runId>");
       process.exitCode = 1;
       return;
     }
@@ -603,14 +603,14 @@ async function handleCronCommand(argv: string[]): Promise<void> {
     console.log(JSON.stringify(result, null, 2));
     return;
   }
-  console.error("Usage: pilotdeck cron <list|create|delete|stop>");
+  console.error("Usage: nukemai cron <list|create|delete|stop>");
   process.exitCode = 1;
 }
 
 async function handleSkillsCommand(argv: string[]): Promise<void> {
   const command = argv[0];
   if (command !== "migrate") {
-    console.error("Usage: pilotdeck skills migrate [--execute] [--from cc,openclaw,hermes] [--source <dir>] [--overwrite|--rename]");
+    console.error("Usage: nukemai skills migrate [--execute] [--from cc,openclaw,hermes] [--source <dir>] [--overwrite|--rename]");
     process.exitCode = 1;
     return;
   }
@@ -623,7 +623,7 @@ async function handleSkillsCommand(argv: string[]): Promise<void> {
       : "skip";
   const projectRoot = readStringFlag(argv, "--project") ?? process.cwd();
   const pilotHome = readStringFlag(argv, "--pilot-home") ?? resolvePilotHome(process.env);
-  const report = await migrateSkillsToPilotDeck({
+  const report = await migrateSkillsToNukemAI({
     pilotHome,
     projectRoot,
     include: from,
@@ -664,9 +664,9 @@ function parseSkillMigrationSources(value: string | undefined): Array<Exclude<Sk
   return sources.length > 0 ? [...new Set(sources)] : undefined;
 }
 
-function printSkillMigrationReport(report: Awaited<ReturnType<typeof migrateSkillsToPilotDeck>>): void {
+function printSkillMigrationReport(report: Awaited<ReturnType<typeof migrateSkillsToNukemAI>>): void {
   const mode = report.mode === "execute" ? "EXECUTED" : "DRY RUN";
-  console.log(`PilotDeck skills migration (${mode})`);
+  console.log(`NukemAI skills migration (${mode})`);
   console.log(`Target: ${report.targetRoot}`);
   console.log(
     `Summary: migrated=${report.summary.migrated} would_migrate=${report.summary.would_migrate} ` +
@@ -746,7 +746,7 @@ function createFallbackGateway(): Gateway {
     yield {
       type: "error",
       code: "local_gateway_unavailable",
-      message: `No PilotDeck server is available and local config could not start session ${input.sessionKey}.`,
+      message: `No NukemAI server is available and local config could not start session ${input.sessionKey}.`,
       recoverable: false,
     };
   }

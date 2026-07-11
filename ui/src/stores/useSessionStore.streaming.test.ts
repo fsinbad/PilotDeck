@@ -7,7 +7,7 @@ import {
   type SessionSlot,
 } from './useSessionStore';
 
-const PROVIDER = 'pilotdeck' as SessionProvider;
+const PROVIDER = 'nukemai' as SessionProvider;
 
 function makeSlot(overrides: Partial<SessionSlot> = {}): SessionSlot {
   return {

@@ -3,7 +3,7 @@
  * Mirrors the legacy contracts in `services/mcp/client.ts` (M1-M16).
  */
 
-export type PilotDeckMcpServerSpec =
+export type NukemAIMcpServerSpec =
   | {
       id: string;
       transport: "stdio";
@@ -26,7 +26,7 @@ export type PilotDeckMcpServerSpec =
       headers?: Record<string, string>;
     };
 
-export type PilotDeckMcpToolAnnotations = {
+export type NukemAIMcpToolAnnotations = {
   readOnlyHint?: boolean;
   destructiveHint?: boolean;
   openWorldHint?: boolean;
@@ -37,30 +37,30 @@ export type PilotDeckMcpToolAnnotations = {
  * Runtime view of a tool advertised by an MCP server. Already sanitized
  * (M9), wire-named (M10), and description-truncated (M11).
  */
-export type PilotDeckMcpToolSpec = {
+export type NukemAIMcpToolSpec = {
   serverId: string;
   toolName: string;
   wireName: string;
   description: string;
   inputSchema: unknown;
-  annotations?: PilotDeckMcpToolAnnotations;
+  annotations?: NukemAIMcpToolAnnotations;
   meta?: Record<string, unknown>;
 };
 
-export type PilotDeckMcpStatus =
+export type NukemAIMcpStatus =
   | "idle"
   | "connecting"
   | "ready"
   | "error"
   | "needs-auth";
 
-export type PilotDeckMcpServerInstructions = {
+export type NukemAIMcpServerInstructions = {
   serverId: string;
   instructions: string;
 };
 
-export type PilotDeckMcpClientStatusEntry = {
+export type NukemAIMcpClientStatusEntry = {
   serverId: string;
-  status: PilotDeckMcpStatus;
+  status: NukemAIMcpStatus;
   error?: string;
 };

@@ -7,7 +7,7 @@ const DEFAULT_MCP_CONFIG = {
 };
 
 function pilotHome() {
-  return process.env.PILOT_HOME || path.join(os.homedir(), '.pilotdeck');
+  return process.env.PILOT_HOME || path.join(os.homedir(), '.nukemai');
 }
 
 export function getGlobalMcpConfigPath() {
@@ -15,7 +15,7 @@ export function getGlobalMcpConfigPath() {
 }
 
 export function getProjectMcpConfigPath(projectPath) {
-  return path.join(projectPath || process.cwd(), '.pilotdeck', 'mcp.json');
+  return path.join(projectPath || process.cwd(), '.nukemai', 'mcp.json');
 }
 
 export function normalizeMcpConfig(input) {

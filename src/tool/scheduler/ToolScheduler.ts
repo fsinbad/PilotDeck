@@ -1,6 +1,6 @@
-import type { PilotDeckToolResult } from "../protocol/result.js";
-import type { PilotDeckToolCall, PilotDeckToolRuntimeContext } from "../protocol/types.js";
+import type { NukemAIToolResult } from "../protocol/result.js";
+import type { NukemAIToolCall, NukemAIToolRuntimeContext } from "../protocol/types.js";
 
-export type PilotDeckToolScheduler = {
-  executeAll(calls: PilotDeckToolCall[], context: PilotDeckToolRuntimeContext): Promise<PilotDeckToolResult[]>;
+export type NukemAIToolScheduler = {
+  executeAll(calls: NukemAIToolCall[], context: NukemAIToolRuntimeContext): Promise<NukemAIToolResult[]>;
 };

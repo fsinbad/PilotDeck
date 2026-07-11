@@ -1,68 +1,68 @@
 export type {
-  PilotDeckPermissionAuditRecord,
-  PilotDeckToolAuditRecord,
-  PilotDeckToolAuditRecorder,
+  NukemAIPermissionAuditRecord,
+  NukemAIToolAuditRecord,
+  NukemAIToolAuditRecorder,
 } from "./audit/ToolAuditRecorder.js";
 export { ToolRuntime } from "./execution/ToolRuntime.js";
 export { validateToolInput } from "./execution/validateToolInput.js";
 export {
   normalizeToolError,
-  PilotDeckToolRuntimeError,
+  NukemAIToolRuntimeError,
   toolError,
-  type PilotDeckToolError,
-  type PilotDeckToolErrorCode,
+  type NukemAIToolError,
+  type NukemAIToolErrorCode,
 } from "./protocol/errors.js";
 export {
   applyResultSizeLimit,
   contentToText,
   estimateResultContentBytes,
   toCanonicalToolResultBlock,
-  type PilotDeckToolErrorResult,
-  type PilotDeckToolResult,
-  type PilotDeckToolResultSizeMetadata,
-  type PilotDeckToolSuccessResult,
+  type NukemAIToolErrorResult,
+  type NukemAIToolResult,
+  type NukemAIToolResultSizeMetadata,
+  type NukemAIToolSuccessResult,
 } from "./protocol/result.js";
 export type {
-  PilotDeckJsonSchema,
-  PilotDeckToolInputSchema,
-  PilotDeckToolValidationIssue,
-  PilotDeckToolValidationResult,
+  NukemAIJsonSchema,
+  NukemAIToolInputSchema,
+  NukemAIToolValidationIssue,
+  NukemAIToolValidationResult,
 } from "./protocol/schema.js";
 export type {
-  PilotDeckToolCall,
-  PilotDeckToolAvailability,
-  PilotDeckToolAvailabilityContext,
-  PilotDeckToolDefinition,
-  PilotDeckToolExecutionOutput,
-  PilotDeckToolSupplementalMessage,
-  PilotDeckFileUpdateNotification,
-  PilotDeckFileUpdateNotifier,
-  PilotDeckPlanTodoStateHandle,
-  PilotDeckPlanTodoStateSnapshot,
-  PilotDeckToolFileHistorySink,
-  PilotDeckToolKind,
-  PilotDeckToolModelClient,
-  PilotDeckToolProgressEvent,
-  PilotDeckToolProgressSink,
-  PilotDeckTodoItem,
-  PilotDeckReadFileStateEntry,
-  PilotDeckReadFileStateMap,
-  PilotDeckToolResultContent,
-  PilotDeckToolRuntimeContext,
-  PilotDeckSubagentForkApi,
-  PilotDeckWriteSnapshotEntry,
-  PilotDeckWriteSnapshotMap,
+  NukemAIToolCall,
+  NukemAIToolAvailability,
+  NukemAIToolAvailabilityContext,
+  NukemAIToolDefinition,
+  NukemAIToolExecutionOutput,
+  NukemAIToolSupplementalMessage,
+  NukemAIFileUpdateNotification,
+  NukemAIFileUpdateNotifier,
+  NukemAIPlanTodoStateHandle,
+  NukemAIPlanTodoStateSnapshot,
+  NukemAIToolFileHistorySink,
+  NukemAIToolKind,
+  NukemAIToolModelClient,
+  NukemAIToolProgressEvent,
+  NukemAIToolProgressSink,
+  NukemAITodoItem,
+  NukemAIReadFileStateEntry,
+  NukemAIReadFileStateMap,
+  NukemAIToolResultContent,
+  NukemAIToolRuntimeContext,
+  NukemAISubagentForkApi,
+  NukemAIWriteSnapshotEntry,
+  NukemAIWriteSnapshotMap,
 } from "./protocol/types.js";
 export { ToolRegistry } from "./registry/ToolRegistry.js";
 export { createBuiltinRegistry, type CreateBuiltinRegistryOptions } from "./registry/createBuiltinRegistry.js";
 export {
   filterAvailableTools,
   type FilterAvailableToolsResult,
-  type PilotDeckUnavailableToolDiagnostic,
+  type NukemAIUnavailableToolDiagnostic,
 } from "./registry/filterAvailableTools.js";
 export { ConcurrentToolScheduler } from "./scheduler/ConcurrentToolScheduler.js";
 export { SequentialToolScheduler } from "./scheduler/SequentialToolScheduler.js";
-export type { PilotDeckToolScheduler } from "./scheduler/ToolScheduler.js";
+export type { NukemAIToolScheduler } from "./scheduler/ToolScheduler.js";
 export {
   BUILTIN_SUBAGENTS,
   createAgentTool,
@@ -101,9 +101,9 @@ export {
   type BashOutputState,
   type BashInput,
   type CreateBashToolOptions,
-  type PilotDeckCommandOptions,
-  type PilotDeckCommandResult,
-  type PilotDeckCommandRunner,
+  type NukemAICommandOptions,
+  type NukemAICommandResult,
+  type NukemAICommandRunner,
 } from "./builtin/bash.js";
 export {
   ASK_USER_QUESTION_HEADER_MAX,
@@ -116,12 +116,12 @@ export {
 } from "./builtin/askUserQuestion.js";
 export {
   InMemoryElicitationChannel,
-  type PilotDeckElicitationAnswer,
-  type PilotDeckElicitationChannel,
-  type PilotDeckElicitationOption,
-  type PilotDeckElicitationQuestion,
-  type PilotDeckElicitationRequest,
-} from "./elicitation/PilotDeckElicitationChannel.js";
+  type NukemAIElicitationAnswer,
+  type NukemAIElicitationChannel,
+  type NukemAIElicitationOption,
+  type NukemAIElicitationQuestion,
+  type NukemAIElicitationRequest,
+} from "./elicitation/NukemAIElicitationChannel.js";
 export { validateHtmlPreview } from "./elicitation/validateHtmlPreview.js";
 export {
   createWebFetchTool,
@@ -179,12 +179,12 @@ export {
   buildMcpToolWireName,
   createMcpTool,
   type CreateMcpToolOptions,
-  type PilotDeckMcpToolAdapter,
+  type NukemAIMcpToolAdapter,
 } from "./builtin/mcpTool.js";
 export {
   createListMcpResourcesTool,
   createReadMcpResourceTool,
-  type PilotDeckMcpResourceAdapter,
+  type NukemAIMcpResourceAdapter,
 } from "./builtin/mcpResources.js";
 export { createStructuredOutputTool, type StructuredOutputInput } from "./builtin/structuredOutput.js";
 export {

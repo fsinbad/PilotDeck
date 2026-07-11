@@ -1,14 +1,14 @@
 /**
  * Pure-JS port of the path helpers from `src/pilot/paths.ts`.
  *
- * Lets `ui/server/` resolve `~/.pilotdeck` and encode project IDs the
+ * Lets `ui/server/` resolve `~/.nukemai` and encode project IDs the
  * same way the gateway server does, WITHOUT pulling `dist/src/pilot/`
  * into the express bridge. Keeping the math here means the UI server
  * can run from source without needing the TypeScript output to exist
  * on disk first.
  *
  * Keep this in sync with `src/pilot/paths.ts` — both must round-trip
- * identically or `~/.pilotdeck/projects/<id>/.cwd` markers written by
+ * identically or `~/.nukemai/projects/<id>/.cwd` markers written by
  * the bridge will not be found by `gateway.listProjects()` and vice
  * versa.
  */
@@ -17,7 +17,7 @@ import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
-export const DEFAULT_PILOT_HOME = '~/.pilotdeck';
+export const DEFAULT_PILOT_HOME = '~/.nukemai';
 
 function normalizeHomePath(p) {
     if (p === '~') return homedir();
@@ -26,9 +26,9 @@ function normalizeHomePath(p) {
 }
 
 /**
- * Resolve the active PilotDeck home directory. Honors `PILOT_HOME` so
+ * Resolve the active NukemAI home directory. Honors `PILOT_HOME` so
  * tests / multi-instance setups can isolate state. Defaults to
- * `~/.pilotdeck`.
+ * `~/.nukemai`.
  *
  * @param {Record<string, string | undefined>} [env] Environment to read.
  * @returns {string} Absolute path.
@@ -39,7 +39,7 @@ export function resolvePilotHome(env = process.env) {
 
 /**
  * Encode an absolute project path into the on-disk project ID used under
- * `~/.pilotdeck/projects/<id>/`.
+ * `~/.nukemai/projects/<id>/`.
  *
  * This is the legacy lossy encoding. New UI-created projects use
  * `createCollisionResistantProjectId()` only when this id is already claimed
@@ -68,7 +68,7 @@ export function createCollisionResistantProjectId(projectRoot) {
  * unregistered workspaces.
  *
  * @param {string} projectRoot Absolute filesystem path.
- * @param {string} [pilotHome] Active PilotDeck home directory.
+ * @param {string} [pilotHome] Active NukemAI home directory.
  * @returns {string} Project directory name under `<pilotHome>/projects`.
  */
 export function resolveProjectStorageId(projectRoot, pilotHome = resolvePilotHome()) {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject } from 'react';
 import { authenticatedFetch } from '../../../utils/api';
-import type { ChatMessage, ClaudeWorkStatus, PilotDeckWorkStatus } from '../types/types';
+import type { ChatMessage, ClaudeWorkStatus, NukemAIWorkStatus } from '../types/types';
 import {
   getSessionRequestParams,
   isReadOnlySession,
@@ -239,7 +239,7 @@ export function useChatSessionState({
   const [tokenBudget, setTokenBudget] = useState<Record<string, unknown> | null>(null);
   const [visibleMessageCount, setVisibleMessageCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const [claudeStatus, setClaudeStatus] = useState<ClaudeWorkStatus | null>(null);
-  const [pilotDeckStatus, setPilotDeckStatus] = useState<PilotDeckWorkStatus | null>(null);
+  const [pilotDeckStatus, setNukemAIStatus] = useState<NukemAIWorkStatus | null>(null);
   const [sessionLoadError, setSessionLoadError] = useState<string | null>(null);
   const [allMessagesLoaded, setAllMessagesLoaded] = useState(false);
   const [isLoadingAllMessages, setIsLoadingAllMessages] = useState(false);
@@ -355,7 +355,7 @@ export function useChatSessionState({
   if (activeSessionId && activeSessionId !== prevActiveSessionRef.current && pendingUserMessage) {
     const expectedSessionId = pendingViewSessionRef.current?.sessionId ?? null;
     if (expectedSessionId && activeSessionId === expectedSessionId) {
-      const normalized = chatMessageToNormalized(pendingUserMessage, activeSessionId, 'pilotdeck' as SessionProvider);
+      const normalized = chatMessageToNormalized(pendingUserMessage, activeSessionId, 'nukemai' as SessionProvider);
       if (normalized) {
         sessionStore.appendRealtime(activeSessionId, normalized);
       }
@@ -427,7 +427,7 @@ export function useChatSessionState({
       setPendingUserMessage(msg);
       return;
     }
-    const normalized = chatMessageToNormalized(msg, sessionId, 'pilotdeck' as SessionProvider);
+    const normalized = chatMessageToNormalized(msg, sessionId, 'nukemai' as SessionProvider);
     if (normalized) {
       sessionStore.appendRealtime(sessionId, normalized);
     }
@@ -484,7 +484,7 @@ export function useChatSessionState({
 
       try {
         const slot = await sessionStore.fetchMore(selectedSession.id, {
-          provider: 'pilotdeck',
+          provider: 'nukemai',
           projectName: selectedProject.name,
           projectPath: selectedProject.fullPath || selectedProject.path || '',
           ...sessionRequestParams,
@@ -587,7 +587,7 @@ export function useChatSessionState({
       pendingViewSessionRef.current = null;
       setPendingUserMessage(null);
       setClaudeStatus(null);
-      setPilotDeckStatus(null);
+      setNukemAIStatus(null);
       setCanAbortSession(false);
       setIsAborting(false);
       setIsLoading(false);
@@ -601,7 +601,7 @@ export function useChatSessionState({
       return;
     }
 
-    const provider = 'pilotdeck';
+    const provider = 'nukemai';
     const sessionKey = JSON.stringify([
       selectedSession.id,
       selectedProject.name,
@@ -629,7 +629,7 @@ export function useChatSessionState({
       resetStreamingState();
       pendingViewSessionRef.current = null;
       setClaudeStatus(null);
-      setPilotDeckStatus(null);
+      setNukemAIStatus(null);
       setSessionLoadError(null);
       setCanAbortSession(false);
       setIsAborting(false);
@@ -671,7 +671,7 @@ export function useChatSessionState({
 
     // Fetch from server → store updates → chatMessages re-derives automatically
     setIsLoadingSessionMessages(true);
-    // Intentionally fetch the WHOLE transcript on session entry: PilotDeck's
+    // Intentionally fetch the WHOLE transcript on session entry: NukemAI's
     // `readSessionMessages` slices in jsonl-forward order (`allMessages.slice(
     // offset, offset+limit)`), but the ui-side `fetchMore` path that handles
     // scroll-to-top assumes "more older messages" semantics and prepends the
@@ -681,7 +681,7 @@ export function useChatSessionState({
     // already on screen). Sessions are typically well under a few hundred
     // messages, so fetching everything is fine.
     sessionStore.fetchFromServer(selectedSession.id, {
-      provider: 'pilotdeck',
+      provider: 'nukemai',
       projectName: selectedProject.name,
       projectPath: selectedProject.fullPath || selectedProject.path || '',
       ...sessionRequestParams,
@@ -723,7 +723,7 @@ export function useChatSessionState({
         // Skip store refresh during active streaming
         if (!isLoading) {
           await sessionStore.refreshFromServer(selectedSession.id, {
-            provider: 'pilotdeck',
+            provider: 'nukemai',
             projectName: selectedProject.name,
             projectPath: selectedProject.fullPath || selectedProject.path || '',
             ...sessionRequestParams,
@@ -781,7 +781,7 @@ export function useChatSessionState({
         {
           try {
             const slot = await sessionStore.fetchFromServer(selectedSession.id, {
-              provider: 'pilotdeck',
+              provider: 'nukemai',
               projectName: selectedProject.name,
               projectPath: selectedProject.fullPath || selectedProject.path || '',
               ...sessionRequestParams,
@@ -864,7 +864,7 @@ export function useChatSessionState({
 
     const fetchInitialTokenUsage = async () => {
       try {
-        const url = `/api/projects/${selectedProject.name}/sessions/${encodeURIComponent(selectedSession.id)}/token-usage?provider=pilotdeck`;
+        const url = `/api/projects/${selectedProject.name}/sessions/${encodeURIComponent(selectedSession.id)}/token-usage?provider=nukemai`;
         const response = await authenticatedFetch(url);
         if (response.ok) {
           setTokenBudget(await response.json());
@@ -952,7 +952,7 @@ export function useChatSessionState({
       sendMessage({
         type: 'check-session-status',
         sessionId: activeViewSessionId,
-        provider: 'pilotdeck',
+        provider: 'nukemai',
         includeActiveTurnMessages: false,
       });
     };
@@ -1003,7 +1003,7 @@ export function useChatSessionState({
 
     try {
       const slot = await sessionStore.fetchFromServer(requestSessionId, {
-        provider: 'pilotdeck',
+        provider: 'nukemai',
         projectName: selectedProject.name,
         projectPath: selectedProject.fullPath || selectedProject.path || '',
         ...sessionRequestParams,
@@ -1086,7 +1086,7 @@ export function useChatSessionState({
     claudeStatus,
     setClaudeStatus,
     pilotDeckStatus,
-    setPilotDeckStatus,
+    setNukemAIStatus,
     createDiff,
     scrollContainerRef,
     scrollToBottom,

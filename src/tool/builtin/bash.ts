@@ -1,6 +1,6 @@
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
-import { NodeShellCommandRunner, type PilotDeckCommandRunner } from "./bash/commandRunner.js";
+import type { NukemAIToolDefinition } from "../protocol/types.js";
+import { NukemAIToolRuntimeError } from "../protocol/errors.js";
+import { NodeShellCommandRunner, type NukemAICommandRunner } from "./bash/commandRunner.js";
 import { classifyBashPermission, isReadOnlyShellCommand } from "./bash/permissions.js";
 
 export type BashInput = {
@@ -10,7 +10,7 @@ export type BashInput = {
 };
 
 export type CreateBashToolOptions = {
-  runner?: PilotDeckCommandRunner;
+  runner?: NukemAICommandRunner;
   defaultTimeoutMs?: number;
   maxTimeoutMs?: number;
 };
@@ -37,7 +37,7 @@ export type BashOutput = {
   assertions: BashOutputAssertions;
 };
 
-const BASH_TOOL_DESCRIPTION = `Run a shell command in the PilotDeck workspace.
+const BASH_TOOL_DESCRIPTION = `Run a shell command in the NukemAI workspace.
 
 Usage:
 - The \`command\` parameter is passed to the system shell (\`cmd.exe\` on Windows, \`/bin/sh\` on macOS/Linux).
@@ -47,7 +47,7 @@ Usage:
 - Use this tool for short shell commands, simple pipelines, and running saved workspace scripts.
 - Use task_create for long-running work such as dev servers, watchers, builds, test suites, deploys, CI pollers, or commands that need more than the maximum foreground timeout. For background work that should finish, call task_wait after task_create. Use task_output for progress checks and task_stop for long-lived processes.
 - For non-trivial code or anything you will debug/rerun with changed parameters, first create or edit a script file with write_file/edit_file, then run that file. Avoid large inline heredocs, \`python - <<...\`, long \`python -c\`, or long \`node -e\` programs when a saved script would be reusable.
-- Do not use shell-level backgrounding (\`nohup\`, \`disown\`, \`setsid\`, trailing \`&\`) in bash. Use task_create so PilotDeck can track lifecycle and output.
+- Do not use shell-level backgrounding (\`nohup\`, \`disown\`, \`setsid\`, trailing \`&\`) in bash. Use task_create so NukemAI can track lifecycle and output.
 - Read-only shell commands (for example \`pwd\`, \`ls\`, \`git status\`, \`git diff\`, \`git log\`) are treated as read-only. Commands with side effects require permission, and known-dangerous commands are denied outright.
 - The tool returns stdout, stderr, exit code, and duration. Non-zero exits raise a tool error, and timeouts raise \`tool_timeout\`.
 - Successful results begin with \`BASH_RESULT[success][...]\` plus Assertions. Read \`retrieved_data_available\` before treating \`exit_code: 0\` as task progress: exit code 0 only proves the process succeeded, not that useful task data was retrieved.
@@ -68,7 +68,7 @@ const LONG_LIVED_COMMAND_PATTERNS = [
   /(?:^|\s)(?:cargo\s+watch|watchexec|entr)\b/iu,
 ];
 
-export function createBashTool(options?: CreateBashToolOptions): PilotDeckToolDefinition<BashInput, BashOutput> {
+export function createBashTool(options?: CreateBashToolOptions): NukemAIToolDefinition<BashInput, BashOutput> {
   const runner = options?.runner ?? new NodeShellCommandRunner();
   const defaultTimeoutMs = options?.defaultTimeoutMs ?? 30_000;
   const maxTimeoutMs = options?.maxTimeoutMs ?? 600_000;
@@ -105,14 +105,14 @@ export function createBashTool(options?: CreateBashToolOptions): PilotDeckToolDe
     execute: async (input, context) => {
       const command = input.command.trim();
       if (input.timeout !== undefined && input.timeout > maxTimeoutMs) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NukemAIToolRuntimeError(
           "invalid_tool_input",
           `Foreground bash timeout ${input.timeout}ms exceeds the maximum of ${maxTimeoutMs}ms. ${LONG_TASK_HINT}`,
         );
       }
       const backgroundGuidance = foregroundBackgroundGuidance(command);
       if (backgroundGuidance) {
-        throw new PilotDeckToolRuntimeError("invalid_tool_input", `${backgroundGuidance} ${LONG_TASK_HINT}`);
+        throw new NukemAIToolRuntimeError("invalid_tool_input", `${backgroundGuidance} ${LONG_TASK_HINT}`);
       }
       const timeoutMs = Math.max(1, input.timeout ?? defaultTimeoutMs);
       const progress = context.progress;
@@ -145,12 +145,12 @@ export function createBashTool(options?: CreateBashToolOptions): PilotDeckToolDe
       });
 
       if (result.timedOut) {
-        throw new PilotDeckToolRuntimeError("tool_timeout", `Command timed out after ${timeoutMs}ms.`);
+        throw new NukemAIToolRuntimeError("tool_timeout", `Command timed out after ${timeoutMs}ms.`);
       }
 
       if (result.exitCode !== 0) {
         const summary = formatShellFailure(command, result);
-        throw new PilotDeckToolRuntimeError("tool_execution_failed", summary, {
+        throw new NukemAIToolRuntimeError("tool_execution_failed", summary, {
           command,
           exitCode: result.exitCode,
           stdout: result.stdout,
@@ -294,4 +294,4 @@ function stripQuotedText(command: string): string {
   return command.replace(/(['"])(?:\\.|(?!\1).)*\1/gu, "").replace(/`(?:\\.|[^`])*`/gu, "");
 }
 
-export type { PilotDeckCommandOptions, PilotDeckCommandResult, PilotDeckCommandRunner } from "./bash/commandRunner.js";
+export type { NukemAICommandOptions, NukemAICommandResult, NukemAICommandRunner } from "./bash/commandRunner.js";

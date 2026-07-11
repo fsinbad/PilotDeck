@@ -154,7 +154,7 @@ function ChatInterfaceV2({
     claudeStatus,
     pilotDeckStatus,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNukemAIStatus,
     createDiff,
     scrollContainerRef,
     scrollToBottom,
@@ -255,7 +255,7 @@ function ChatInterfaceV2({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNukemAIStatus,
     setIsUserScrolledUp,
     pendingPermissionRequests,
     setPendingPermissionRequests,
@@ -283,7 +283,7 @@ function ChatInterfaceV2({
     if (shouldRefreshSessionOnReconnect({ isLoading, processingSessions, sessionId: selectedSession.id })) {
       await refreshSessionAfterReconnect(() =>
         sessionStore.refreshFromServer(selectedSession.id, {
-          provider: 'pilotdeck',
+          provider: 'nukemai',
           projectName: selectedProject.name,
           projectPath: selectedProject.fullPath || selectedProject.path || '',
           ...sessionRequestParams,
@@ -310,7 +310,7 @@ function ChatInterfaceV2({
   ]);
 
   useChatRealtimeHandlers({
-    provider: 'pilotdeck',
+    provider: 'nukemai',
     selectedProject,
     selectedSession,
     currentSessionId,
@@ -319,7 +319,7 @@ function ChatInterfaceV2({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNukemAIStatus,
     setTokenBudget,
     setPendingPermissionRequests,
     pendingViewSessionRef,
@@ -485,7 +485,7 @@ function ChatInterfaceV2({
     <ComposerV2
       input={input}
       placeholder={t('composer.placeholder', {
-        defaultValue: 'Tell PilotDeck what you want to get done…',
+        defaultValue: 'Tell NukemAI what you want to get done…',
       }) as string}
       textareaRef={textareaRef}
       inputHighlightRef={inputHighlightRef}
@@ -593,7 +593,7 @@ function ChatInterfaceV2({
         loadAllMessages={loadAllMessages}
         allMessagesLoaded={allMessagesLoaded}
         isLoadingAllMessages={isLoadingAllMessages}
-        provider={'pilotdeck' as Provider}
+        provider={'nukemai' as Provider}
         selectedProject={selectedProject}
         selectedSession={selectedSession}
         createDiff={createDiff}

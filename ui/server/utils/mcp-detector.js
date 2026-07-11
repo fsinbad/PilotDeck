@@ -18,8 +18,8 @@ export async function detectTaskMasterMCPServer() {
     try {
         const homeDir = os.homedir();
         const configPaths = [
-            path.join(homeDir, '.pilotdeck.json'),
-            path.join(homeDir, '.pilotdeck', 'settings.json')
+            path.join(homeDir, '.nukemai.json'),
+            path.join(homeDir, '.nukemai', 'settings.json')
         ];
         
         let configData = null;
@@ -41,7 +41,7 @@ export async function detectTaskMasterMCPServer() {
         if (!configData) {
             return {
                 hasMCPServer: false,
-                reason: 'No pilotdeck configuration file found',
+                reason: 'No nukemai configuration file found',
                 hasConfig: false
             };
         }
@@ -151,8 +151,8 @@ export async function getAllMCPServers() {
     try {
         const homeDir = os.homedir();
         const configPaths = [
-            path.join(homeDir, '.pilotdeck.json'),
-            path.join(homeDir, '.pilotdeck', 'settings.json')
+            path.join(homeDir, '.nukemai.json'),
+            path.join(homeDir, '.nukemai', 'settings.json')
         ];
         
         let configData = null;

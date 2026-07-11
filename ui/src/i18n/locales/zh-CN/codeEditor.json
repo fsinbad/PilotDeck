@@ -74,7 +74,7 @@
     "file": "文件"
   },
   "selection": {
-    "chatInPilotDeck": "在 PilotDeck 中对话",
+    "chatInNukemAI": "在 NukemAI 中对话",
     "noSelectableText": "当前预览不包含可选择文本。"
   }
 }

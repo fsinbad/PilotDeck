@@ -41,7 +41,7 @@ export type SkillMigrationReport = {
   items: SkillMigrationItem[];
 };
 
-export type MigrateSkillsToPilotDeckOptions = {
+export type MigrateSkillsToNukemAIOptions = {
   pilotHome: string;
   projectRoot?: string;
   include?: Array<Exclude<SkillMigrationSourceKind, "custom">>;
@@ -58,8 +58,8 @@ const DEFAULT_INCLUDE: Array<Exclude<SkillMigrationSourceKind, "custom">> = [
   "hermes",
 ];
 
-export async function migrateSkillsToPilotDeck(
-  options: MigrateSkillsToPilotDeckOptions,
+export async function migrateSkillsToNukemAI(
+  options: MigrateSkillsToNukemAIOptions,
 ): Promise<SkillMigrationReport> {
   const pilotHome = resolve(options.pilotHome);
   const scope = options.scope ?? "user";
@@ -183,7 +183,7 @@ export async function migrateSkillsToPilotDeck(
   };
 }
 
-function buildSources(options: MigrateSkillsToPilotDeckOptions): SkillMigrationSource[] {
+function buildSources(options: MigrateSkillsToNukemAIOptions): SkillMigrationSource[] {
   const home = homedir();
   const projectRoot = options.projectRoot ? resolve(options.projectRoot) : resolve(process.cwd());
   const include = options.include ?? DEFAULT_INCLUDE;

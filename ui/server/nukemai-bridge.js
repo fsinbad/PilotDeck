@@ -1,15 +1,15 @@
 /**
- * PilotDeck bridge — the only chat-execution entry point in `ui/server/`.
+ * NukemAI bridge — the only chat-execution entry point in `ui/server/`.
  *
  *
- *   1. Connects to the standalone PilotDeck gateway server
- *      (`pilotdeck server`, default ws://127.0.0.1:18789/ws) as a
+ *   1. Connects to the standalone NukemAI gateway server
+ *      (`nukemai server`, default ws://127.0.0.1:18789/ws) as a
  *      WebSocket client. We never instantiate an in-process gateway
  *      here — that would create a second, divergent agent runtime that
- *      doesn't share `~/.pilotdeck/projects/<id>/chats/*.jsonl` writes
+ *      doesn't share `~/.nukemai/projects/<id>/chats/*.jsonl` writes
  *      and permission state with the CLI/TUI surfaces. One process, one
  *      gateway.
- *   2. Maps each old "sessionId" → PilotDeck "sessionKey" (1:1, generated
+ *   2. Maps each old "sessionId" → NukemAI "sessionKey" (1:1, generated
  *      on first turn and remembered for resume).
  *   3. Translates GatewayEvent → NormalizedMessage and writes back via
  *      `writer.send(...)` so the existing UI rendering pipeline stays
@@ -23,7 +23,7 @@
  *
  * Two-process launch:
  *
- *   - `pilotdeck server` (port 18789) owns the gateway, agent loop,
+ *   - `nukemai server` (port 18789) owns the gateway, agent loop,
  *     model router, MCP runtime, cron daemon, and on-disk session
  *     transcripts. Edit `src/**` then restart this process to pick up
  *     changes — no `npm run build` required when running via `tsx`.
@@ -58,7 +58,7 @@ import {
     createVisibleErrorStatusDetail,
     isVisibleFailureStatusDetail,
 } from '../../src/status/agentStatus.js';
-import { createNormalizedMessage } from './pilotdeck-message.js';
+import { createNormalizedMessage } from './nukemai-message.js';
 import { readPermissionSettings } from './services/permissionSettings.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -67,16 +67,16 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const GENERAL_HOME = resolvePilotHome(process.env);
 
 const GATEWAY_URL =
-    process.env.PILOTDECK_GATEWAY_URL || 'ws://127.0.0.1:18789/ws';
+    process.env.NUKEMAI_GATEWAY_URL || 'ws://127.0.0.1:18789/ws';
 const GATEWAY_TOKEN_PATH =
-    process.env.PILOTDECK_GATEWAY_TOKEN_PATH ||
+    process.env.NUKEMAI_GATEWAY_TOKEN_PATH ||
     path.join(GENERAL_HOME, 'server-token');
 // The two processes (gateway + bridge) are typically started in
 // parallel by `concurrently`. We allow up to 30 s for the gateway to
 // come up before failing the first call — covers cold MCP startup on
 // slower machines.
 const GATEWAY_CONNECT_TIMEOUT_MS =
-    Number.parseInt(process.env.PILOTDECK_BRIDGE_TIMEOUT ?? '', 10) || 60_000;
+    Number.parseInt(process.env.NUKEMAI_BRIDGE_TIMEOUT ?? '', 10) || 60_000;
 const GATEWAY_CONNECT_RETRY_INTERVAL_MS = 500;
 const subagentActivityStarts = new Map();
 /** @type {Map<string, string[]>} sessionId → [toolCallId, ...] for pending agent/Task tool calls */
@@ -162,14 +162,14 @@ function isVisibleFailureAgentStatus(event) {
 
 /**
  * Default permission mode for sessions started from the Web UI. We use
- * `default` so PilotDeck's `Permission.decide()` fully evaluates rules
+ * `default` so NukemAI's `Permission.decide()` fully evaluates rules
  * + tool semantics — read-only tools allow, side-effecting tools either
  * surface an interactive `permission_request` (resolved via the banner)
  * or short-circuit on an allow rule the user accumulated this session.
- * Override with `PILOTDECK_WEB_PERMISSION_MODE`.
+ * Override with `NUKEMAI_WEB_PERMISSION_MODE`.
  */
 const WEB_DEFAULT_PERMISSION_MODE =
-    process.env.PILOTDECK_WEB_PERMISSION_MODE || 'default';
+    process.env.NUKEMAI_WEB_PERMISSION_MODE || 'default';
 
 
 // Resolves to the Gateway returned by `createRemoteGateway`. We express
@@ -204,7 +204,7 @@ async function connectWithRetry() {
                     clientName: 'web',
                 });
                 console.log(
-                    `[pilotdeck-bridge] connected → ${GATEWAY_URL}`,
+                    `[nukemai-bridge] connected → ${GATEWAY_URL}`,
                 );
                 return gateway;
             } catch (error) {
@@ -217,7 +217,7 @@ async function connectWithRetry() {
     }
     const detail = lastError instanceof Error ? `: ${lastError.message}` : '';
     throw new Error(
-        `[pilotdeck-bridge] gateway connect failed after ${GATEWAY_CONNECT_TIMEOUT_MS}ms${detail}`,
+        `[nukemai-bridge] gateway connect failed after ${GATEWAY_CONNECT_TIMEOUT_MS}ms${detail}`,
     );
 }
 
@@ -248,11 +248,11 @@ export function isGatewayUnavailableError(error) {
  * (`projects.js`, etc.) await this so they share one WebSocket
  * connection instead of opening their own.
  */
-export async function getPilotDeckGateway() {
+export async function getNukemAIGateway() {
     return ensureGateway();
 }
 
-export function getPilotDeckRepoRoot() {
+export function getNukemAIRepoRoot() {
     return REPO_ROOT;
 }
 
@@ -264,7 +264,7 @@ export function getPilotDeckRepoRoot() {
  */
 const sessionState = new Map();
 
-function isPilotDeckSessionKey(value) {
+function isNukemAISessionKey(value) {
     if (typeof value !== 'string' || !value.trim()) return false;
     if (value.startsWith('new-session-')) return false;
     if (/^web[:_-]s_/.test(value)) return true;
@@ -412,7 +412,7 @@ function resolvePermissionMode(options) {
  *
  * @param {object} event Gateway event payload.
  * @param {string} sessionId UI-facing session id.
- * @param {string} provider Provider hint (pilotdeck).
+ * @param {string} provider Provider hint (nukemai).
  * @returns {object[]} NormalizedMessage frames.
  */
 export function gatewayEventToFrames(event, sessionId, provider) {
@@ -991,9 +991,9 @@ function sendBridgeStatusEvent(writer, statusEvent, sessionKey, provider) {
 }
 
 /**
- * Run a chat command through the PilotDeck gateway.
+ * Run a chat command through the NukemAI gateway.
  *
- * The frontend addresses sessions by the PilotDeck `sessionKey` itself
+ * The frontend addresses sessions by the NukemAI `sessionKey` itself
  * (`web:s_<uuid>`). On the first turn we mint a key and announce it via
  * a `session_created` frame; the frontend stores that and uses it on
  * every subsequent turn (and after page refresh, since the URL embeds
@@ -1018,13 +1018,13 @@ export async function runChatViaGateway(
     command,
     options = {},
     writer,
-    provider = 'pilotdeck',
+    provider = 'nukemai',
 ) {
     const projectKey = options.projectPath || options.cwd || GENERAL_HOME;
     const channelKey = 'web';
 
     const incoming = options.sessionId || options.sessionKey;
-    const sessionKey = isPilotDeckSessionKey(incoming) ? incoming : newSessionKey();
+    const sessionKey = isNukemAISessionKey(incoming) ? incoming : newSessionKey();
     const isNewSession = sessionKey !== incoming;
 
     const state = ensureSessionState(sessionKey, projectKey, channelKey);
@@ -1055,7 +1055,7 @@ export async function runChatViaGateway(
     const resolvedMode = resolvePermissionMode(options);
     const basePermissionMode = normalizePermissionMode(options?.basePermissionMode);
     const runMode = normalizeRunMode(options?.runMode) || (resolvedMode === 'plan' ? 'plan' : 'agent');
-    console.log(`[pilotdeck-bridge] submitTurn runMode=${runMode} mode=${resolvedMode} (options.permissionMode=${options?.permissionMode}, options.mode=${options?.mode})`);
+    console.log(`[nukemai-bridge] submitTurn runMode=${runMode} mode=${resolvedMode} (options.permissionMode=${options?.permissionMode}, options.mode=${options?.mode})`);
 
     let gw = null;
     try {
@@ -1067,14 +1067,14 @@ export async function runChatViaGateway(
                 : 'system:stale_turn';
             const abortAction = options?.forceStart === true ? 'force-start aborting' : 'aborting stale';
             console.log(
-                `[pilotdeck-bridge] ${abortAction} turn ${staleRunId} for ${sessionKey} before submit`,
+                `[nukemai-bridge] ${abortAction} turn ${staleRunId} for ${sessionKey} before submit`,
             );
             try {
                 await gw.abortTurn({ sessionKey, runId: staleRunId, reason: abortReason });
             } catch (err) {
                 if (options?.forceStart === true) {
                     const message = 'Could not stop the current turn before sending the queued message. Please wait for the current turn to finish or try stopping it again.';
-                    console.warn('[pilotdeck-bridge] force-start abort failed:', err?.message || err);
+                    console.warn('[nukemai-bridge] force-start abort failed:', err?.message || err);
                     writer.send(
                         createNormalizedMessage({
                             provider,
@@ -1088,7 +1088,7 @@ export async function runChatViaGateway(
                     clearActiveRunIfCurrent(state, staleRunId);
                     return;
                 }
-                console.warn('[pilotdeck-bridge] stale abort failed (continuing):', err?.message || err);
+                console.warn('[nukemai-bridge] stale abort failed (continuing):', err?.message || err);
             }
         }
 
@@ -1115,7 +1115,7 @@ export async function runChatViaGateway(
             if (event && event.type === 'error') {
                 sawGatewayError = true;
                 console.error(
-                    '[pilotdeck-bridge] gateway error event:',
+                    '[nukemai-bridge] gateway error event:',
                     JSON.stringify(
                         {
                             sessionKey,
@@ -1160,13 +1160,13 @@ export async function runChatViaGateway(
 
         if (!sawTurnCompleted && !sawGatewayError) {
             const message = 'Gateway stream ended before turn_completed; no final assistant response was received.';
-            const userHint = 'The model stream ended before PilotDeck received a final turn result. Please retry this message; if it repeats, check the gateway/model provider logs.';
+            const userHint = 'The model stream ended before NukemAI received a final turn result. Please retry this message; if it repeats, check the gateway/model provider logs.';
             const statusEvent = createBridgeFailureStatusEvent({
                 event: 'gateway_stream_ended_without_completion',
                 message,
                 userHint,
             });
-            console.warn(`[pilotdeck-bridge] ${message}`, { sessionKey, projectKey, runId });
+            console.warn(`[nukemai-bridge] ${message}`, { sessionKey, projectKey, runId });
             await recordGatewayStatusMessage(gw, {
                 sessionKey,
                 turnId: runId,
@@ -1184,12 +1184,12 @@ export async function runChatViaGateway(
         if (gatewayUnavailable) {
             resetGatewayConnection();
         }
-        const message = gatewayUnavailable ? 'PilotDeck gateway is unavailable.' : rawMessage;
+        const message = gatewayUnavailable ? 'NukemAI gateway is unavailable.' : rawMessage;
         const statusEvent = gatewayUnavailable
             ? createBridgeFailureStatusEvent({
                 event: 'gateway_unavailable',
                 message,
-                userHint: 'Start or restart the PilotDeck gateway, then retry this message.',
+                userHint: 'Start or restart the NukemAI gateway, then retry this message.',
                 scope: 'preflight',
                 detail: {
                     gatewayUrl: GATEWAY_URL,
@@ -1202,7 +1202,7 @@ export async function runChatViaGateway(
             });
 
         console.error(
-            '[pilotdeck-bridge] runChatViaGateway threw:',
+            '[nukemai-bridge] runChatViaGateway threw:',
             error instanceof Error ? (error.stack || error.message) : error,
         );
         if (gw) {
@@ -1237,13 +1237,13 @@ async function recordGatewayStatusMessage(gateway, { sessionKey, turnId, project
             },
         });
     } catch (error) {
-        console.warn('[pilotdeck-bridge] failed to record gateway status message:', error?.message || error);
+        console.warn('[nukemai-bridge] failed to record gateway status message:', error?.message || error);
     }
 }
 
-export async function abortViaGateway(sessionId, _provider = 'pilotdeck') {
+export async function abortViaGateway(sessionId, _provider = 'nukemai') {
     const gw = await ensureGateway();
-    const sessionKey = isPilotDeckSessionKey(sessionId) ? sessionId : null;
+    const sessionKey = isNukemAISessionKey(sessionId) ? sessionId : null;
     if (!sessionKey) return false;
     const state = sessionState.get(sessionKey);
     try {
@@ -1255,7 +1255,7 @@ export async function abortViaGateway(sessionId, _provider = 'pilotdeck') {
         }
         return true;
     } catch (error) {
-        console.warn('[pilotdeck-bridge] abortTurn failed:', error);
+        console.warn('[nukemai-bridge] abortTurn failed:', error);
         return false;
     }
 }
@@ -1275,7 +1275,7 @@ export async function decidePermissionViaGateway(requestId, decision, options = 
             });
             if (result?.delivered) return true;
         } catch (error) {
-            console.warn('[pilotdeck-bridge] permissionDecide failed:', error);
+            console.warn('[nukemai-bridge] permissionDecide failed:', error);
         }
     }
     return false;
@@ -1283,7 +1283,7 @@ export async function decidePermissionViaGateway(requestId, decision, options = 
 
 export async function grantSessionPermissionViaGateway(sessionId, entry) {
     const gw = await ensureGateway();
-    if (!isPilotDeckSessionKey(sessionId) || typeof entry !== 'string' || !entry.trim()) {
+    if (!isNukemAISessionKey(sessionId) || typeof entry !== 'string' || !entry.trim()) {
         return false;
     }
     try {
@@ -1293,18 +1293,18 @@ export async function grantSessionPermissionViaGateway(sessionId, entry) {
         });
         return Boolean(result?.granted);
     } catch (error) {
-        console.warn('[pilotdeck-bridge] grantSessionPermission failed:', error);
+        console.warn('[nukemai-bridge] grantSessionPermission failed:', error);
         return false;
     }
 }
 
 export function isSessionActiveViaGateway(sessionId) {
-    if (!isPilotDeckSessionKey(sessionId)) return false;
+    if (!isNukemAISessionKey(sessionId)) return false;
     return Boolean(sessionState.get(sessionId)?.active);
 }
 
-export async function getActiveTurnSnapshotFramesViaGateway(sessionId, provider = 'pilotdeck') {
-    if (!isPilotDeckSessionKey(sessionId)) return [];
+export async function getActiveTurnSnapshotFramesViaGateway(sessionId, provider = 'nukemai') {
+    if (!isNukemAISessionKey(sessionId)) return [];
     const gw = await ensureGateway();
     if (typeof gw.getActiveTurnSnapshot !== 'function') return [];
     const snapshot = await gw.getActiveTurnSnapshot({ sessionKey: sessionId });
@@ -1319,8 +1319,8 @@ export function getActiveSessionIdsViaGateway() {
 }
 
 /**
- * Read persisted router stats from `~/.pilotdeck/router/stats.json`.
- * Falls back to the legacy `~/.pilotdeck/router-stats.json` path.
+ * Read persisted router stats from `~/.nukemai/router/stats.json`.
+ * Falls back to the legacy `~/.nukemai/router-stats.json` path.
  *
  * Both the gateway server and this bridge run in different processes;
  * we no longer have an in-memory accessor (`getLocalGatewayRouterStats`
@@ -1332,7 +1332,7 @@ export function getActiveSessionIdsViaGateway() {
  */
 /**
  * Build a sessionId->projectPath lookup from the filesystem.
- * Scans project chat directories under ~/.pilotdeck/projects/ and maps
+ * Scans project chat directories under ~/.nukemai/projects/ and maps
  * each session filename back to the actual project path (resolved via
  * the .cwd marker or well-known directory names).
  *
@@ -1945,7 +1945,7 @@ export function getRouterDashboardData() {
                     sessionId: record.sessionId,
                     _projectKey: projectKey,
                     title: lookupSessionTitle(record.sessionId, projectKey) || record.sessionId,
-                    provider: record.provider || 'pilotdeck',
+                    provider: record.provider || 'nukemai',
                     lastActivity: record.endedAt,
                     userQueries: extractUserQueries(record.sessionId, projectKey),
                     routing: {
@@ -2188,7 +2188,7 @@ export function registerAlwaysOnNotificationForwarding(clients) {
             const { sessionKey, channelKey, event } = payload ?? {};
             if (!sessionKey || !event) return;
 
-            const provider = 'pilotdeck';
+            const provider = 'nukemai';
 
             if (!knownSessions.has(sessionKey)) {
                 knownSessions.add(sessionKey);
@@ -2231,7 +2231,7 @@ export function registerAlwaysOnNotificationForwarding(clients) {
             }
         });
     }).catch((err) => {
-        console.warn('[pilotdeck-bridge] failed to register always-on notification forwarding:', err?.message || err);
+        console.warn('[nukemai-bridge] failed to register always-on notification forwarding:', err?.message || err);
     });
 }
 
@@ -2246,7 +2246,7 @@ export async function elicitationRespondViaGateway(requestId, answer) {
             });
             if (result?.delivered) return true;
         } catch (error) {
-            console.warn('[pilotdeck-bridge] respondElicitation failed:', error);
+            console.warn('[nukemai-bridge] respondElicitation failed:', error);
         }
     }
     return false;

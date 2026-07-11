@@ -11,10 +11,10 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
-const DEFAULT_REPOSITORY = 'openbmb/PilotDeck';
+const DEFAULT_REPOSITORY = 'openbmb/NukemAI';
 const DEFAULT_TIMEOUT_MS = 15_000;
 const CACHE_TTL_MS = 5 * 60 * 1000;
-const USER_AGENT = 'PilotDeck-Updater/1.0';
+const USER_AGENT = 'NukemAI-Updater/1.0';
 
 let cachedStatus = null;
 let downloadJob = createIdleDownloadJob();
@@ -38,7 +38,7 @@ export function compareVersions(current, latest) {
 export function parseVersionParts(value) {
   const normalized = String(value || '')
     .trim()
-    .replace(/^pilotdeck[-_ ]?/i, '')
+    .replace(/^nukemai[-_ ]?/i, '')
     .replace(/^desktop[-_ ]?/i, '')
     .replace(/^v/i, '');
   const matches = normalized.match(/\d+/g);
@@ -119,8 +119,8 @@ export async function getCurrentDesktopVersion(options = {}) {
   return {
     version:
       firstNonEmpty(
-        env.PILOTDECK_DESKTOP_VERSION,
-        env.PILOTDECK_VERSION,
+        env.NUKEMAI_DESKTOP_VERSION,
+        env.NUKEMAI_VERSION,
         env.APP_VERSION,
         env.npm_package_version,
         packageVersion,
@@ -129,7 +129,7 @@ export async function getCurrentDesktopVersion(options = {}) {
     commit,
     platform: process.platform,
     arch: process.arch,
-    desktop: env.PILOTDECK_DESKTOP === '1' || Boolean(env.PILOTDECK_DESKTOP_VERSION),
+    desktop: env.NUKEMAI_DESKTOP === '1' || Boolean(env.NUKEMAI_DESKTOP_VERSION),
   };
 }
 
@@ -143,7 +143,7 @@ export async function getDesktopUpdateStatus(options = {}) {
   }
 
   const current = await getCurrentDesktopVersion({ env, projectRoot: options.projectRoot });
-  const repository = normalizeRepository(env.PILOTDECK_UPDATE_REPOSITORY || env.PILOTDECK_RELEASE_REPOSITORY);
+  const repository = normalizeRepository(env.NUKEMAI_UPDATE_REPOSITORY || env.NUKEMAI_RELEASE_REPOSITORY);
 
   try {
     const latest = await fetchLatestRelease({ env, repository, includePrerelease: shouldIncludePrerelease(env) });
@@ -192,7 +192,7 @@ export async function getDesktopUpdateStatus(options = {}) {
 
 export async function listDesktopReleases(options = {}) {
   const env = options.env || process.env;
-  const repository = normalizeRepository(env.PILOTDECK_UPDATE_REPOSITORY || env.PILOTDECK_RELEASE_REPOSITORY);
+  const repository = normalizeRepository(env.NUKEMAI_UPDATE_REPOSITORY || env.NUKEMAI_RELEASE_REPOSITORY);
   const limit = clampInteger(options.limit, 1, 30, 10);
   const releases = await fetchReleases({
     env,
@@ -235,7 +235,7 @@ export async function startDesktopUpdateDownload(options = {}) {
 
   const destinationDir = getUpdateCacheDir(options.env || process.env, status.latest.tagName || status.latest.version);
   mkdirSync(destinationDir, { recursive: true });
-  const destinationPath = path.join(destinationDir, sanitizeFilename(asset.name || 'pilotdeck-update'));
+  const destinationPath = path.join(destinationDir, sanitizeFilename(asset.name || 'nukemai-update'));
   const partialPath = `${destinationPath}.download`;
 
   downloadAbortController = new AbortController();
@@ -304,7 +304,7 @@ export function launchDownloadedDesktopUpdate(options = {}) {
   const resolvedPath = path.resolve(filePath);
   const relativeToCache = path.relative(path.resolve(cacheRoot), resolvedPath);
   if (relativeToCache.startsWith('..') || path.isAbsolute(relativeToCache)) {
-    const error = new Error('Installer path is outside the PilotDeck update cache.');
+    const error = new Error('Installer path is outside the NukemAI update cache.');
     error.statusCode = 400;
     throw error;
   }
@@ -320,7 +320,7 @@ export function launchDownloadedDesktopUpdate(options = {}) {
     launched: true,
     filePath: resolvedPath,
     needsRestart: true,
-    message: 'Installer launched. Complete the installer flow, then restart PilotDeck.',
+    message: 'Installer launched. Complete the installer flow, then restart NukemAI.',
   };
 }
 
@@ -357,7 +357,7 @@ async function fetchReleases(options) {
 }
 
 async function fetchJson(url, env) {
-  const timeoutMs = clampInteger(env.PILOTDECK_UPDATE_TIMEOUT_MS, 1_000, 120_000, DEFAULT_TIMEOUT_MS);
+  const timeoutMs = clampInteger(env.NUKEMAI_UPDATE_TIMEOUT_MS, 1_000, 120_000, DEFAULT_TIMEOUT_MS);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -377,7 +377,7 @@ async function fetchJson(url, env) {
 }
 
 function createGitHubHeaders(env) {
-  const token = firstNonEmpty(env.PILOTDECK_GITHUB_TOKEN, env.GITHUB_TOKEN);
+  const token = firstNonEmpty(env.NUKEMAI_GITHUB_TOKEN, env.GITHUB_TOKEN);
   return {
     Accept: 'application/vnd.github+json',
     'User-Agent': USER_AGENT,
@@ -542,7 +542,7 @@ function readPackageVersion(projectRoot) {
 }
 
 async function getCurrentCommit(projectRoot, env) {
-  const fromEnv = firstNonEmpty(env.PILOTDECK_COMMIT_SHA, env.GIT_COMMIT, env.VERCEL_GIT_COMMIT_SHA);
+  const fromEnv = firstNonEmpty(env.NUKEMAI_COMMIT_SHA, env.GIT_COMMIT, env.VERCEL_GIT_COMMIT_SHA);
   if (fromEnv) return fromEnv;
 
   try {
@@ -555,8 +555,8 @@ async function getCurrentCommit(projectRoot, env) {
 
 async function getBuildTime(projectRoot, env) {
   const fromEnv = firstNonEmpty(
-    env.PILOTDECK_DESKTOP_BUILD_TIME,
-    env.PILOTDECK_BUILD_TIME,
+    env.NUKEMAI_DESKTOP_BUILD_TIME,
+    env.NUKEMAI_BUILD_TIME,
     env.BUILD_TIME,
     env.npm_package_build_time,
   );
@@ -571,15 +571,15 @@ async function getBuildTime(projectRoot, env) {
 }
 
 function shouldIncludePrerelease(env) {
-  return env.PILOTDECK_UPDATE_INCLUDE_PRERELEASE === '1'
-    || env.PILOTDECK_UPDATE_CHANNEL === 'beta'
-    || env.PILOTDECK_UPDATE_CHANNEL === 'nightly';
+  return env.NUKEMAI_UPDATE_INCLUDE_PRERELEASE === '1'
+    || env.NUKEMAI_UPDATE_CHANNEL === 'beta'
+    || env.NUKEMAI_UPDATE_CHANNEL === 'nightly';
 }
 
 function getUpdateCacheRoot(env) {
-  return env.PILOTDECK_UPDATE_CACHE_DIR
-    ? path.resolve(env.PILOTDECK_UPDATE_CACHE_DIR)
-    : path.join(os.homedir(), '.pilotdeck', 'updates');
+  return env.NUKEMAI_UPDATE_CACHE_DIR
+    ? path.resolve(env.NUKEMAI_UPDATE_CACHE_DIR)
+    : path.join(os.homedir(), '.nukemai', 'updates');
 }
 
 function getUpdateCacheDir(env, releaseName) {

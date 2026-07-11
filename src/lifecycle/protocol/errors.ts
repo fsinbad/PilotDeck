@@ -1,5 +1,5 @@
-export class PilotDeckLifecycleRuntimeError extends Error {
-  readonly name = "PilotDeckLifecycleRuntimeError";
+export class NukemAILifecycleRuntimeError extends Error {
+  readonly name = "NukemAILifecycleRuntimeError";
 
   constructor(
     readonly code: "hook_blocked" | "hook_failed",

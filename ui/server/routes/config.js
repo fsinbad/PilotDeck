@@ -5,21 +5,21 @@ import { spawn } from 'child_process';
 import { prepareBackgroundSpawnOptions } from '../utils/processSpawn.js';
 import { parse as parseYaml } from 'yaml';
 import {
-  buildDefaultPilotDeckConfig,
+  buildDefaultNukemAIConfig,
   configToYaml,
-  getPilotDeckConfigPath,
+  getNukemAIConfigPath,
   maskSecrets,
   parseConfigYaml,
   preserveMaskedSecrets,
   rawYamlToMaskedString,
-  readPilotDeckConfigFile,
-  validatePilotDeckConfig,
-  writePilotDeckConfig,
-  writeRawPilotDeckYaml,
-} from '../services/pilotdeckConfig.js';
-import { reloadPilotDeckConfig } from '../services/pilotdeckConfigReloader.js';
-import { suppressNextWatchEvent } from '../services/pilotdeckConfigWatcher.js';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+  readNukemAIConfigFile,
+  validateNukemAIConfig,
+  writeNukemAIConfig,
+  writeRawNukemAIYaml,
+} from '../services/nukemaiConfig.js';
+import { reloadNukemAIConfig } from '../services/nukemaiConfigReloader.js';
+import { suppressNextWatchEvent } from '../services/nukemaiConfigWatcher.js';
+import { getNukemAIGateway } from '../nukemai-bridge.js';
 import {
   buildProviderChatEndpointCandidates,
   buildProviderModelsEndpointCandidates,
@@ -37,7 +37,7 @@ import {
 
 async function notifyGatewayConfigReload() {
   try {
-    const gw = await getPilotDeckGateway();
+    const gw = await getNukemAIGateway();
     if (gw?.reloadConfig) await gw.reloadConfig();
   } catch { /* gateway unreachable — self-watch will pick up the change */ }
 }
@@ -62,7 +62,7 @@ function serializeConfigResponse(record, reloadResult = null) {
     };
   }
 
-  const validation = validatePilotDeckConfig(record.config);
+  const validation = validateNukemAIConfig(record.config);
   const maskedConfig = maskSecrets(record.config);
   // Prefer the disk's actual YAML for the "raw" view so non-ui-internal
   // top-level segments (router/gateway/adapters/extension/cron/alwaysOn)
@@ -86,7 +86,7 @@ function serializeConfigResponse(record, reloadResult = null) {
 }
 
 function broadcastConfigEvent(payload) {
-  process.emit('pilotdeck:config-broadcast', payload);
+  process.emit('nukemai:config-broadcast', payload);
 }
 
 function extractProbeText(body, providerKind) {
@@ -227,7 +227,7 @@ function isExpectedModelsJsonBody(protocol, responseText) {
 
 router.get('/', (_req, res) => {
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNukemAIConfigFile();
     res.json(serializeConfigResponse(record));
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
@@ -238,7 +238,7 @@ router.post('/validate', (req, res) => {
   try {
     const raw = typeof req.body?.raw === 'string' ? req.body.raw : '';
     const config = raw ? parseConfigYaml(raw) : req.body?.config;
-    const validation = validatePilotDeckConfig(config);
+    const validation = validateNukemAIConfig(config);
     res.status(validation.valid ? 200 : 400).json(validation);
   } catch (error) {
     res.status(400).json({ valid: false, errors: [error instanceof Error ? error.message : String(error)], warnings: [] });
@@ -278,20 +278,20 @@ router.put('/', async (req, res) => {
     //
     //   • `{ raw: "..." }` from the Raw YAML editor → write the
     //     parsed YAML object to disk verbatim via
-    //     writeRawPilotDeckYaml. This is the only path that preserves
+    //     writeRawNukemAIYaml. This is the only path that preserves
     //     router/gateway/adapters/extension/cron/alwaysOn edits,
     //     because the ui-internal schema doesn't model them.
     //
     //   • `{ config: {...} }` from structured editors (provider
     //     picker, memory editor, onboarding LLM step) → run through
-    //     writePilotDeckConfig, which round-trips through
+    //     writeNukemAIConfig, which round-trips through
     //     ui-internal but read-modify-writes the rest from disk so
     //     non-ui segments aren't dropped.
     //
     // Removing the `config` branch is what got 5ad9f29 reverted;
     // never collapse the two paths into one — they have different
     // semantics and different callers.
-    const diskRecord = readPilotDeckConfigFile();
+    const diskRecord = readNukemAIConfigFile();
     const rawString = typeof req.body?.raw === 'string' ? req.body.raw : null;
 
     let saved;
@@ -314,7 +314,7 @@ router.put('/', async (req, res) => {
         ? parsed
         : preserveMaskedSecrets(parsed, diskRecord.rawYaml ?? {});
       suppressNextWatchEvent();
-      saved = await writeRawPilotDeckYaml(restored);
+      saved = await writeRawNukemAIYaml(restored);
     } else if (req.body?.config && typeof req.body.config === 'object') {
       if (diskRecord.parseError) {
         return res.status(400).json({
@@ -330,17 +330,17 @@ router.put('/', async (req, res) => {
       }
       const restored = preserveMaskedSecrets(req.body.config, diskRecord.config);
       suppressNextWatchEvent();
-      saved = await writePilotDeckConfig(restored);
+      saved = await writeNukemAIConfig(restored);
     } else {
       return res.status(400).json({ error: 'raw YAML or config object is required' });
     }
 
-    const reloadResult = await reloadPilotDeckConfig(saved.config);
+    const reloadResult = await reloadNukemAIConfig(saved.config);
     void notifyGatewayConfigReload();
     // Re-read disk so the response's `raw` field comes from the actual
     // (lossless) file rather than the lossy round-trip output, and so
     // `serializeConfigResponse` has a `rawYaml` to render the full view.
-    const freshRecord = readPilotDeckConfigFile();
+    const freshRecord = readNukemAIConfigFile();
     const response = serializeConfigResponse(freshRecord, reloadResult);
     broadcastConfigEvent({ source: 'ui-save', ...response, timestamp: new Date().toISOString() });
     res.json(response);
@@ -354,7 +354,7 @@ router.put('/', async (req, res) => {
 
 router.post('/reload', async (_req, res) => {
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNukemAIConfigFile();
     if (record.parseError) {
       return res.status(400).json({
         error: 'Invalid config YAML',
@@ -367,11 +367,11 @@ router.post('/reload', async (_req, res) => {
         },
       });
     }
-    const validation = validatePilotDeckConfig(record.config);
+    const validation = validateNukemAIConfig(record.config);
     if (!validation.valid) {
       return res.status(400).json({ error: 'Invalid config', validation });
     }
-    const reloadResult = await reloadPilotDeckConfig(record.config);
+    const reloadResult = await reloadNukemAIConfig(record.config);
     void notifyGatewayConfigReload();
     const response = serializeConfigResponse(record, reloadResult);
     broadcastConfigEvent({ source: 'ui-reload', ...response, timestamp: new Date().toISOString() });
@@ -383,7 +383,7 @@ router.post('/reload', async (_req, res) => {
 
 router.get('/provider', (_req, res) => {
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNukemAIConfigFile();
     const providers = record.config?.model?.providers;
     if (!providers || typeof providers !== 'object') {
       return res.json({ exists: false, provider: null });
@@ -433,7 +433,7 @@ router.post('/models', async (req, res) => {
   let effectiveApiKey = typeof apiKey === 'string' ? apiKey : '';
   if ((!effectiveApiKey || effectiveApiKey === '********') && typeof providerId === 'string' && providerId.trim()) {
     try {
-      const record = readPilotDeckConfigFile();
+      const record = readNukemAIConfigFile();
       const provider = record.config?.model?.providers?.[providerId.trim()];
       if (typeof provider?.apiKey === 'string') effectiveApiKey = provider.apiKey;
     } catch { /* fall through to validation below */ }
@@ -802,13 +802,13 @@ function readPath(value, pathValue) {
 }
 
 router.post('/open', async (_req, res) => {
-  const configPath = getPilotDeckConfigPath();
+  const configPath = getNukemAIConfigPath();
   try {
     await fsPromises.mkdir(path.dirname(configPath), { recursive: true });
     try {
       await fsPromises.access(configPath);
     } catch {
-      await fsPromises.writeFile(configPath, configToYaml(buildDefaultPilotDeckConfig()), 'utf8');
+      await fsPromises.writeFile(configPath, configToYaml(buildDefaultNukemAIConfig()), 'utf8');
     }
 
     const command = process.platform === 'darwin'

@@ -70,7 +70,7 @@ export {
   type CustomRouterContext,
   type CustomRouterDecideInput,
   type CustomRouterRegistry,
-  type PilotDeckCustomRouter,
+  type NukemAICustomRouter,
 } from "./customRouter/customRouter.js";
 export {
   ProviderHealthTracker,

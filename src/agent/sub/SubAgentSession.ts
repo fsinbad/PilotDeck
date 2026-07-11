@@ -25,9 +25,9 @@ import type { AgentRuntimeConfig } from "../runtime/AgentRuntimeConfig.js";
 import type { AgentRuntimeDependencies } from "../runtime/AgentRuntimeDependencies.js";
 import { ToolRegistry } from "../../tool/registry/ToolRegistry.js";
 import type {
-  PilotDeckReadFileStateMap,
-  PilotDeckToolDefinition,
-  PilotDeckWriteSnapshotMap,
+  NukemAIReadFileStateMap,
+  NukemAIToolDefinition,
+  NukemAIWriteSnapshotMap,
 } from "../../tool/index.js";
 import { ConcurrentToolScheduler } from "../../tool/scheduler/ConcurrentToolScheduler.js";
 import { ToolRuntime } from "../../tool/execution/ToolRuntime.js";
@@ -58,9 +58,9 @@ export type SubAgentSessionOptions = {
   /** Parent agent's runtime dependencies (model, scheduler factory, ...). */
   parentDependencies: AgentRuntimeDependencies;
   /** Parent agent's read-file deduplication cache (cloned into the child). */
-  parentReadFileState?: PilotDeckReadFileStateMap;
+  parentReadFileState?: NukemAIReadFileStateMap;
   /** Parent agent's write snapshots (cloned into the child). */
-  parentWriteSnapshots?: PilotDeckWriteSnapshotMap;
+  parentWriteSnapshots?: NukemAIWriteSnapshotMap;
   /** Parent session/turn scope used for forwarding child activity to hosts. */
   parentSessionId: string;
   parentTurnId: string;
@@ -210,7 +210,7 @@ export class SubAgentSession {
         continue; // S9 — read-only subagents reject side-effecting tools outright.
       }
       if (!wildcard && !allowedSet.has(tool.name)) continue;
-      scoped.register(tool as PilotDeckToolDefinition);
+      scoped.register(tool as NukemAIToolDefinition);
     }
     return scoped;
   }

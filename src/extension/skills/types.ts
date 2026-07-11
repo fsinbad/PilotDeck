@@ -3,13 +3,13 @@
  * between the gateway, its remote clients (UI server bridge), and any
  * future SDK consumer. They intentionally avoid leaking absolute paths
  * to outside callers — every operation is addressed by `(scope, slug)`
- * and the manager itself owns the path layout under `~/.pilotdeck/skills/`
- * and `<projectRoot>/.pilotdeck/skills/`.
+ * and the manager itself owns the path layout under `~/.nukemai/skills/`
+ * and `<projectRoot>/.nukemai/skills/`.
  */
 
 /**
- * "user" lives in `~/.pilotdeck/skills/`, available to every project.
- * "project" lives in `<projectRoot>/.pilotdeck/skills/`, scoped to the
+ * "user" lives in `~/.nukemai/skills/`, available to every project.
+ * "project" lives in `<projectRoot>/.nukemai/skills/`, scoped to the
  * project the agent is running against.
  */
 export type SkillScope = "user" | "project";

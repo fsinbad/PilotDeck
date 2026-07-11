@@ -7,7 +7,7 @@ import type { Gateway } from "../gateway/index.js";
 import { startGatewayServer, type GatewayServer } from "../gateway/index.js";
 import type { PilotConfig } from "../pilot/index.js";
 
-export type StartPilotDeckServerOptions = {
+export type StartNukemAIServerOptions = {
   gateway: Gateway;
   port?: number;
   host?: string;
@@ -21,13 +21,13 @@ export type StartPilotDeckServerOptions = {
    */
   channels?: ChannelAdapter[];
   /**
-   * Loaded pilotdeck.yaml config — passed into channel.start() so adapters can
+   * Loaded nukemai.yaml config — passed into channel.start() so adapters can
    * read their own section (e.g. `adapters.feishu.appId/appSecret`).
    */
   config?: PilotConfig;
 };
 
-export type PilotDeckServer = GatewayServer & {
+export type NukemAIServer = GatewayServer & {
   /**
    * Hot-start a channel adapter after server startup.
    * Stops any previously running instance of the same channelKey first.
@@ -36,7 +36,7 @@ export type PilotDeckServer = GatewayServer & {
   deliverCronResult(delivery: CronResultDelivery): Promise<boolean>;
 };
 
-export async function startPilotDeckServer(options: StartPilotDeckServerOptions): Promise<PilotDeckServer> {
+export async function startNukemAIServer(options: StartNukemAIServerOptions): Promise<NukemAIServer> {
   const consoleLogger = {
     info: (msg: string) => console.log(msg),
     warn: (msg: string) => console.warn(msg),

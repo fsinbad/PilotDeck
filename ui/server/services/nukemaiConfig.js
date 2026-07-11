@@ -5,7 +5,7 @@ import path from 'path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { parseGatewayConfig } from '../../../src/pilot/config/parseGatewayConfig.js';
 
-// Source of truth: ~/.pilotdeck/pilotdeck.yaml. The disk format and the
+// Source of truth: ~/.nukemai/nukemai.yaml. The disk format and the
 // "internal" config object are the same V2 schema — no more adapter layer.
 //
 // Top-level shape:
@@ -24,8 +24,8 @@ import { parseGatewayConfig } from '../../../src/pilot/config/parseGatewayConfig
 // schemas. UI server just round-trips them.
 
 const CONFIG_VERSION = 1;
-const PILOT_HOME_DIR = process.env.PILOT_HOME || path.join(os.homedir(), '.pilotdeck');
-const DEFAULT_CONFIG_PATH = path.join(PILOT_HOME_DIR, 'pilotdeck.yaml');
+const PILOT_HOME_DIR = process.env.PILOT_HOME || path.join(os.homedir(), '.nukemai');
+const DEFAULT_CONFIG_PATH = path.join(PILOT_HOME_DIR, 'nukemai.yaml');
 const MASK = '********';
 
 const SECRET_KEY_RE = /(api[_-]?key|token|secret|password|auth[_-]?token|access[_-]?token|bot[_-]?token|app[_-]?token|encoding[_-]?aes[_-]?key)$/i;
@@ -60,7 +60,7 @@ function deepMerge(base, override) {
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
-export function buildDefaultPilotDeckConfig() {
+export function buildDefaultNukemAIConfig() {
   return {
     schemaVersion: CONFIG_VERSION,
     agent: {
@@ -103,8 +103,8 @@ export function buildDefaultPilotDeckConfig() {
 
 // `normalize` here means "fill in missing top-level sections with defaults"
 // — it never reshapes. Idempotent.
-export function normalizePilotDeckConfig(input) {
-  return deepMerge(buildDefaultPilotDeckConfig(), isRecord(input) ? input : {});
+export function normalizeNukemAIConfig(input) {
+  return deepMerge(buildDefaultNukemAIConfig(), isRecord(input) ? input : {});
 }
 
 // Strip surrounding whitespace from provider apiKey + url before they
@@ -246,8 +246,8 @@ function validateGatewayConfig(config, errors, warnings) {
   }
 }
 
-export function validatePilotDeckConfig(config) {
-  const normalized = normalizePilotDeckConfig(config);
+export function validateNukemAIConfig(config) {
+  const normalized = normalizeNukemAIConfig(config);
   const errors = [];
   const warnings = [];
 
@@ -344,7 +344,7 @@ function providerProtocolToMemoryApi(protocol) {
 }
 
 export function buildRuntimeEnv(config) {
-  const normalized = normalizePilotDeckConfig(config);
+  const normalized = normalizeNukemAIConfig(config);
   const main = resolveModel(normalized, normalized.agent.model, { allowMissing: true });
   const runtime = normalized.webui?.runtime ?? {};
 
@@ -353,7 +353,7 @@ export function buildRuntimeEnv(config) {
     VITE_PORT: process.env.VITE_PORT || String(runtime.vitePort ?? 5173),
     HOST: process.env.HOST || String(runtime.host ?? '0.0.0.0'),
     API_TIMEOUT_MS: String(runtime.apiTimeoutMs ?? 120000),
-    PILOTDECK_MEMORY_ENABLED: normalized.memory?.enabled ? '1' : '0',
+    NUKEMAI_MEMORY_ENABLED: normalized.memory?.enabled ? '1' : '0',
   };
 
   if (runtime.databasePath) env.DATABASE_PATH = expandTilde(runtime.databasePath);
@@ -367,9 +367,9 @@ export function buildRuntimeEnv(config) {
   }
 
   if (main) {
-    env.PILOTDECK_API_BASE_URL = main.provider.url || '';
-    env.PILOTDECK_API_KEY = main.provider.apiKey || '';
-    env.PILOTDECK_MODEL = main.model;
+    env.NUKEMAI_API_BASE_URL = main.provider.url || '';
+    env.NUKEMAI_API_KEY = main.provider.apiKey || '';
+    env.NUKEMAI_MODEL = main.model;
     env.OPENAI_BASE_URL = main.provider.url || '';
     env.OPENAI_API_KEY = main.provider.apiKey || '';
     env.OPENAI_MODEL = main.model;
@@ -394,9 +394,9 @@ export function buildRuntimeEnv(config) {
     10,
   );
   if (Number.isFinite(requestedMaxOutput) && requestedMaxOutput > 0) {
-    env.PILOTDECK_MAX_OUTPUT_TOKENS = String(requestedMaxOutput);
-  } else if (process.env.PILOTDECK_MAX_OUTPUT_TOKENS) {
-    env.PILOTDECK_MAX_OUTPUT_TOKENS = process.env.PILOTDECK_MAX_OUTPUT_TOKENS;
+    env.NUKEMAI_MAX_OUTPUT_TOKENS = String(requestedMaxOutput);
+  } else if (process.env.NUKEMAI_MAX_OUTPUT_TOKENS) {
+    env.NUKEMAI_MAX_OUTPUT_TOKENS = process.env.NUKEMAI_MAX_OUTPUT_TOKENS;
   }
 
   const tavilyKey = mainParams.tavilyApiKey ?? mainParams.tavily_api_key ?? process.env.TAVILY_API_KEY;
@@ -406,11 +406,11 @@ export function buildRuntimeEnv(config) {
   const memoryRef = normalizeString(normalized.memory?.model) || normalized.agent.model;
   const memory = resolveModel(normalized, memoryRef, { allowMissing: true });
   if (memory) {
-    env.PILOTDECK_MEMORY_MODEL = memory.model;
-    env.PILOTDECK_MEMORY_PROVIDER = memory.providerId;
-    env.PILOTDECK_MEMORY_BASE_URL = memory.provider.url || '';
-    env.PILOTDECK_MEMORY_API_KEY = memory.provider.apiKey || '';
-    env.PILOTDECK_MEMORY_API_TYPE = normalizeString(normalized.memory?.apiType)
+    env.NUKEMAI_MEMORY_MODEL = memory.model;
+    env.NUKEMAI_MEMORY_PROVIDER = memory.providerId;
+    env.NUKEMAI_MEMORY_BASE_URL = memory.provider.url || '';
+    env.NUKEMAI_MEMORY_API_KEY = memory.provider.apiKey || '';
+    env.NUKEMAI_MEMORY_API_TYPE = normalizeString(normalized.memory?.apiType)
       || providerProtocolToMemoryApi(memory.provider.protocol);
   }
 
@@ -431,7 +431,7 @@ export function applyConfigToProcessEnv(config) {
 // ─── Memory service options ──────────────────────────────────────────────────
 
 export function buildMemoryLlmOptions(config) {
-  const normalized = normalizePilotDeckConfig(config);
+  const normalized = normalizeNukemAIConfig(config);
   const ref = normalizeString(normalized.memory?.model) || normalized.agent.model;
   const memory = resolveModel(normalized, ref, { allowMissing: true });
   if (!memory) return undefined;
@@ -447,7 +447,7 @@ export function buildMemoryLlmOptions(config) {
 }
 
 export function buildMemoryDefaults(config) {
-  const memory = normalizePilotDeckConfig(config).memory ?? {};
+  const memory = normalizeNukemAIConfig(config).memory ?? {};
   return {
     llm: buildMemoryLlmOptions(config),
     defaultIndexingSettings: {
@@ -464,21 +464,21 @@ export function buildMemoryDefaults(config) {
 
 // ─── File I/O ────────────────────────────────────────────────────────────────
 
-export function getPilotDeckConfigPath() {
-  if (process.env.PILOTDECK_CONFIG_PATH?.trim()) {
-    return process.env.PILOTDECK_CONFIG_PATH.trim();
+export function getNukemAIConfigPath() {
+  if (process.env.NUKEMAI_CONFIG_PATH?.trim()) {
+    return process.env.NUKEMAI_CONFIG_PATH.trim();
   }
   return DEFAULT_CONFIG_PATH;
 }
 
-export function readPilotDeckConfigFile() {
-  const configPath = getPilotDeckConfigPath();
+export function readNukemAIConfigFile() {
+  const configPath = getNukemAIConfigPath();
   if (!fs.existsSync(configPath)) {
     return {
       exists: false,
       configPath,
       raw: '',
-      config: buildDefaultPilotDeckConfig(),
+      config: buildDefaultNukemAIConfig(),
       rawYaml: {},
       parseError: null,
     };
@@ -492,12 +492,12 @@ export function readPilotDeckConfigFile() {
       exists: true,
       configPath,
       raw,
-      config: buildDefaultPilotDeckConfig(),
+      config: buildDefaultNukemAIConfig(),
       rawYaml: null,
       parseError: error instanceof Error ? error.message : String(error),
     };
   }
-  const config = normalizePilotDeckConfig(parsed);
+  const config = normalizeNukemAIConfig(parsed);
   return { exists: true, configPath, raw, config, rawYaml: parsed, parseError: null };
 }
 
@@ -610,7 +610,7 @@ function purgeBootstrapPlaceholder(config) {
 // after running through validation. UI-internal === disk schema, so
 // there's no read-modify-write needed anymore (the previous translation
 // layer existed only to bridge an older internal schema).
-export async function writePilotDeckConfig(config) {
+export async function writeNukemAIConfig(config) {
   const sanitized = purgeBootstrapPlaceholder(
     syncAgentModelWithRouter(
       sanitizeProviderCredentials(
@@ -624,13 +624,13 @@ export async function writePilotDeckConfig(config) {
       delete sanitized.memory.model;
     }
   }
-  const validation = validatePilotDeckConfig(sanitized);
+  const validation = validateNukemAIConfig(sanitized);
   if (!validation.valid) {
-    const error = new Error('Invalid PilotDeck config');
+    const error = new Error('Invalid NukemAI config');
     error.validation = validation;
     throw error;
   }
-  const configPath = getPilotDeckConfigPath();
+  const configPath = getNukemAIConfigPath();
   await fsPromises.mkdir(path.dirname(configPath), { recursive: true });
   const yamlObj = validation.config;
   if (isRecord(yamlObj.memory)) {
@@ -646,9 +646,9 @@ export async function writePilotDeckConfig(config) {
 
 // Kept as a thin alias for callers that supply an already-parsed YAML
 // object (Raw YAML editor path). Behaviour is identical to
-// writePilotDeckConfig now that internal === disk.
-export async function writeRawPilotDeckYaml(yamlObj) {
-  return writePilotDeckConfig(yamlObj);
+// writeNukemAIConfig now that internal === disk.
+export async function writeRawNukemAIYaml(yamlObj) {
+  return writeNukemAIConfig(yamlObj);
 }
 
 export function expandTilde(value) {
@@ -659,7 +659,7 @@ export function expandTilde(value) {
 }
 
 export function configToYaml(config) {
-  const normalized = normalizePilotDeckConfig(config);
+  const normalized = normalizeNukemAIConfig(config);
   return stringifyYaml(normalized, { lineWidth: 0 });
 }
 
@@ -671,5 +671,5 @@ export function rawYamlToMaskedString(rawYaml) {
 }
 
 export function parseConfigYaml(raw) {
-  return normalizePilotDeckConfig(parseYaml(raw) || {});
+  return normalizeNukemAIConfig(parseYaml(raw) || {});
 }

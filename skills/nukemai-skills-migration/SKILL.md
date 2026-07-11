@@ -1,17 +1,17 @@
 ---
-name: pilotdeck-skills-migration
+name: nukemai-skills-migration
 description: >-
   Migrate Claude Code, OpenClaw, Hermes, or custom Agent Skill directories into
-  PilotDeck's global skills directory. Use when the user asks to migrate,
-  import, copy, or consolidate skills into PilotDeck, or mentions
+  NukemAI's global skills directory. Use when the user asks to migrate,
+  import, copy, or consolidate skills into NukemAI, or mentions
   ~/.claude/skills, ~/.openclaw, ~/.hermes, ~/.agents/skills, or
-  ~/.pilotdeck/skills.
+  ~/.nukemai/skills.
 ---
 
-# PilotDeck Skills Migration
+# NukemAI Skills Migration
 
-Use this skill to migrate Agent Skill folders into PilotDeck's global skill
-store, `~/.pilotdeck/skills`.
+Use this skill to migrate Agent Skill folders into NukemAI's global skill
+store, `~/.nukemai/skills`.
 
 ## Workflow
 
@@ -22,15 +22,15 @@ npm run skills:migrate
 ```
 
 `npm run dev` runs `predev`, which syncs this repo skill into
-`$PILOT_HOME/skills` (`~/.pilotdeck/skills` by default). The migration command
+`$PILOT_HOME/skills` (`~/.nukemai/skills` by default). The migration command
 itself stays available as `npm run skills:migrate` without requiring a global
-`pilotdeck` command on `PATH`.
+`nukemai` command on `PATH`.
 
 1. Ask the user which source to migrate before running any migration command.
    Use `ask_user_question` with these options:
 
 ```text
-Which skills should I migrate into PilotDeck?
+Which skills should I migrate into NukemAI?
 - Claude Code
 - OpenClaw
 - Hermes
@@ -94,7 +94,7 @@ npm run skills:migrate -- --json
 
 ## Default Sources
 
-The PilotDeck migrator scans immediate child directories containing `SKILL.md`
+The NukemAI migrator scans immediate child directories containing `SKILL.md`
 from:
 
 - Claude Code: `~/.claude/skills`, `<project>/.claude/skills`
@@ -113,6 +113,6 @@ from:
   found.
 - Do not delete source skills.
 - Prefer `--rename` over `--overwrite` unless the user explicitly wants to
-  replace existing PilotDeck skills.
+  replace existing NukemAI skills.
 - The repo bootstrap syncs this skill into `$PILOT_HOME/skills` from
-  `skills/pilotdeck-skills-migration/SKILL.md`; it skips existing targets.
+  `skills/nukemai-skills-migration/SKILL.md`; it skips existing targets.

@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import type { SessionConfigOverrides } from "../../always-on/runtime/SessionConfigOverrides.js";
 import type { Gateway } from "../../gateway/index.js";
 import type { TelemetryClient } from "../../telemetry/index.js";
-import type { PilotDeckToolDefinition } from "../../tool/index.js";
+import type { NukemAIToolDefinition } from "../../tool/index.js";
 import type { CronConfig } from "../config/parseCronConfig.js";
 import type {
   CronCreateInput,
@@ -46,7 +46,7 @@ export class CronManager {
   private readonly pilotHome: string;
   private readonly runtimes = new Map<string, CronRuntime>();
   private readonly starting = new Map<string, Promise<void>>();
-  private readonly tools: PilotDeckToolDefinition[];
+  private readonly tools: NukemAIToolDefinition[];
   private gateway?: Gateway;
   private started = false;
 
@@ -61,7 +61,7 @@ export class CronManager {
     ];
   }
 
-  getTools(): PilotDeckToolDefinition[] {
+  getTools(): NukemAIToolDefinition[] {
     return this.config.enabled ? [...this.tools] : [];
   }
 

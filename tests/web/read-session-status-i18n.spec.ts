@@ -8,8 +8,8 @@ import { createAgentProjectSessionStorage } from "../../src/session/storage/Proj
 import { readWebSessionMessages } from "../../src/web/server/readSessionMessages.js";
 
 test("history replay preserves agent status i18n metadata and user hint", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-status-i18n-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-status-i18n-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-status-i18n-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "nukemai-status-i18n-home-"));
   try {
     const sessionKey = "web:s_status_i18n";
     const storage = createAgentProjectSessionStorage({
@@ -53,8 +53,8 @@ test("history replay preserves agent status i18n metadata and user hint", async 
 });
 
 test("history token usage restores latest non-empty turn past latest empty turn result", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-token-usage-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-token-usage-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-token-usage-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "nukemai-token-usage-home-"));
   try {
     const sessionKey = "web:s_token_usage_restore";
     const storage = createAgentProjectSessionStorage({
@@ -112,8 +112,8 @@ test("history token usage restores latest non-empty turn past latest empty turn 
 });
 
 test("history token usage prefers persisted context budget snapshot", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-token-budget-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-token-budget-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-token-budget-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "nukemai-token-budget-home-"));
   try {
     const sessionKey = "web:s_token_budget_restore";
     const storage = createAgentProjectSessionStorage({

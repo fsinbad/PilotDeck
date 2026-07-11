@@ -1,7 +1,7 @@
 {
-  "name": "PilotDeck",
-  "short_name": "PilotDeck",
-  "description": "PilotDeck — agent-driven development workspace",
+  "name": "NukemAI",
+  "short_name": "NukemAI",
+  "description": "NukemAI — agent-driven development workspace",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

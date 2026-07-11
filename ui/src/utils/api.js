@@ -62,7 +62,7 @@ export const authenticatedFetch = (url, options = {}) => {
       localStorage.setItem('auth-token', refreshedToken);
     }
     if (!suppressServerErrorToast && response.status >= 500) {
-      window.dispatchEvent(new CustomEvent('pilotdeck:toast', {
+      window.dispatchEvent(new CustomEvent('nukemai:toast', {
         detail: { kind: 'error', message: `Server error (${response.status}): ${response.statusText || 'Internal Server Error'}` },
       }));
     }

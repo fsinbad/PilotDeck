@@ -3,15 +3,15 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import {
   configToYaml,
-  getPilotDeckConfigPath,
+  getNukemAIConfigPath,
   maskSecrets,
   rawYamlToMaskedString,
-  readPilotDeckConfigFile,
-  validatePilotDeckConfig,
-} from './pilotdeckConfig.js';
-import { reloadPilotDeckConfig } from './pilotdeckConfigReloader.js';
+  readNukemAIConfigFile,
+  validateNukemAIConfig,
+} from './nukemaiConfig.js';
+import { reloadNukemAIConfig } from './nukemaiConfigReloader.js';
 
-// Watches ~/.pilotdeck/pilotdeck.yaml for external edits (vim, Cursor, other IDEs)
+// Watches ~/.nukemai/nukemai.yaml for external edits (vim, Cursor, other IDEs)
 // and triggers the same reload path the UI uses on save, so *any* edit takes
 // effect live. When the UI itself writes the file it calls
 // suppressNextWatchEvent() first to avoid a redundant second reload.
@@ -46,7 +46,7 @@ async function handleChange(configPath) {
 
   let record;
   try {
-    record = readPilotDeckConfigFile();
+    record = readNukemAIConfigFile();
   } catch (error) {
     onEventHandler?.({
       source: 'watcher',
@@ -80,7 +80,7 @@ async function handleChange(configPath) {
     return;
   }
 
-  const validation = validatePilotDeckConfig(record.config);
+  const validation = validateNukemAIConfig(record.config);
   // Mirror serializeConfigResponse: emit the masked disk YAML so the
   // UI's hot-reload sees full router/gateway/adapters/etc. segments
   // when the file changes from any source (UI save, vim, external tool).
@@ -101,7 +101,7 @@ async function handleChange(configPath) {
 
   let reloadResult = null;
   try {
-    reloadResult = await reloadPilotDeckConfig(record.config);
+    reloadResult = await reloadNukemAIConfig(record.config);
   } catch (error) {
     onEventHandler?.({
       source: 'watcher',
@@ -125,18 +125,18 @@ async function handleChange(configPath) {
   });
 }
 
-export async function startPilotDeckConfigWatcher({ onEvent } = {}) {
-  stopPilotDeckConfigWatcher();
+export async function startNukemAIConfigWatcher({ onEvent } = {}) {
+  stopNukemAIConfigWatcher();
   onEventHandler = typeof onEvent === 'function' ? onEvent : null;
 
-  const configPath = getPilotDeckConfigPath();
+  const configPath = getNukemAIConfigPath();
   const configDir = path.dirname(configPath);
   const configBase = path.basename(configPath);
 
   try {
     await fsPromises.mkdir(configDir, { recursive: true });
   } catch (error) {
-    console.warn('[pilotdeck-config-watcher] failed to ensure config dir:', error?.message || error);
+    console.warn('[nukemai-config-watcher] failed to ensure config dir:', error?.message || error);
     return;
   }
 
@@ -152,15 +152,15 @@ export async function startPilotDeckConfigWatcher({ onEvent } = {}) {
       }, 250);
     });
     watcher.on('error', (error) => {
-      console.warn('[pilotdeck-config-watcher] watch error:', error?.message || error);
+      console.warn('[nukemai-config-watcher] watch error:', error?.message || error);
     });
-    console.log(`[pilotdeck-config-watcher] watching ${configPath}`);
+    console.log(`[nukemai-config-watcher] watching ${configPath}`);
   } catch (error) {
-    console.warn('[pilotdeck-config-watcher] failed to start:', error?.message || error);
+    console.warn('[nukemai-config-watcher] failed to start:', error?.message || error);
   }
 }
 
-export function stopPilotDeckConfigWatcher() {
+export function stopNukemAIConfigWatcher() {
   if (watcher) {
     try {
       watcher.close();

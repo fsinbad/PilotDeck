@@ -24,7 +24,7 @@ import { Button } from '../../../shared/view/ui';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { languages } from '../../../i18n/languages';
 import { useUiPreferences } from '../../../hooks/useUiPreferences';
-import { usePilotDeckConfig } from '../../../hooks/usePilotDeckConfig';
+import { useNukemAIConfig } from '../../../hooks/useNukemAIConfig';
 import { useSettingsController } from '../hooks/useSettingsController';
 import { useGitVersion } from '../../../hooks/useGitVersion';
 import type {
@@ -37,7 +37,7 @@ import SettingsCard from './SettingsCard';
 import SettingsRow from './SettingsRow';
 import SettingsSection from './SettingsSection';
 import SettingsToggle from './SettingsToggle';
-import PilotDeckConfigTab from './tabs/PilotDeckConfigTab';
+import NukemAIConfigTab from './tabs/NukemAIConfigTab';
 import McpServersTab from './tabs/McpServersTab';
 import PermissionsSettingsTab from './tabs/PermissionsSettingsTab';
 import GatewaySettingsTab from './tabs/GatewaySettingsTab';
@@ -141,7 +141,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'appearance' }:
               />
             )}
 
-            {page === 'config' && <PilotDeckConfigTab projects={projects} initialSection={configInitialSection} />}
+            {page === 'config' && <NukemAIConfigTab projects={projects} initialSection={configInitialSection} />}
             {page === 'mcp' && <McpServersTab projects={projects} />}
             {page === 'permissions' && <PermissionsSettingsTab />}
             {page === 'gateway' && <GatewaySettingsTab />}
@@ -174,7 +174,7 @@ function SettingsHome({ projectSortOrder, onProjectSortOrderChange, onOpenPage }
     themeMode?: ThemeMode;
     setThemeMode?: (mode: ThemeMode) => void;
   };
-  const { raw, setRaw, save, loading } = usePilotDeckConfig();
+  const { raw, setRaw, save, loading } = useNukemAIConfig();
 
   const telemetryEnabled = useMemo(() => {
     try {
@@ -583,13 +583,13 @@ function VersionUpdateSection() {
   };
 
   const handleRestart = async () => {
-    document.title = 'Restarting PilotDeck...';
+    document.title = 'Restarting NukemAI...';
     document.body.innerHTML = '';
     document.body.style.cssText = 'margin:0;background:#0a0a0a;display:flex;align-items:center;justify-content:center;height:100vh';
     document.body.innerHTML = `
       <div style="text-align:center;font-family:system-ui,-apple-system,sans-serif">
         <svg style="width:40px;height:40px;margin-bottom:16px;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
-        <p style="color:#ccc;font-size:1.1rem;margin:0 0 8px">Restarting PilotDeck...</p>
+        <p style="color:#ccc;font-size:1.1rem;margin:0 0 8px">Restarting NukemAI...</p>
         <p style="color:#666;font-size:0.8rem;margin:0">Page will reload automatically when server is ready.</p>
       </div>
       <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;

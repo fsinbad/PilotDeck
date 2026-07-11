@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PILOT_HOME="${PILOT_HOME:-/root/.pilotdeck}"
-CONFIG_FILE="$PILOT_HOME/pilotdeck.yaml"
+PILOT_HOME="${PILOT_HOME:-/root/.nukemai}"
+CONFIG_FILE="$PILOT_HOME/nukemai.yaml"
 
 mkdir -p \
   "$PILOT_HOME/projects" \
@@ -12,17 +12,17 @@ mkdir -p \
   "$PILOT_HOME/memory"
 
 if [ -d "$CONFIG_FILE" ]; then
-  echo "[pilotdeck-docker] ERROR: $CONFIG_FILE is a directory, not a config file." >&2
-  echo "[pilotdeck-docker] If you intended to mount a YAML config, create the host file first or remove the bind mount and use PILOTDECK_* env vars." >&2
+  echo "[nukemai-docker] ERROR: $CONFIG_FILE is a directory, not a config file." >&2
+  echo "[nukemai-docker] If you intended to mount a YAML config, create the host file first or remove the bind mount and use NUKEMAI_* env vars." >&2
   exit 1
 fi
 
 # ── Generate config from env vars if no config file is mounted ────────
 if [ ! -f "$CONFIG_FILE" ]; then
-  MODEL="${PILOTDECK_MODEL:-openrouter/deepseek/deepseek-v4-flash}"
-  LIGHT_MODEL="${PILOTDECK_LIGHT_MODEL:-openrouter/qwen/qwen3-8b}"
-  API_KEY="${PILOTDECK_API_KEY:-PLACEHOLDER_RUN_ONBOARDING_TO_REPLACE}"
-  API_URL="${PILOTDECK_API_URL:-https://openrouter.ai/api/v1}"
+  MODEL="${NUKEMAI_MODEL:-openrouter/deepseek/deepseek-v4-flash}"
+  LIGHT_MODEL="${NUKEMAI_LIGHT_MODEL:-openrouter/qwen/qwen3-8b}"
+  API_KEY="${NUKEMAI_API_KEY:-PLACEHOLDER_RUN_ONBOARDING_TO_REPLACE}"
+  API_URL="${NUKEMAI_API_URL:-https://openrouter.ai/api/v1}"
 
   # Derive provider name from model string (e.g. "openrouter/deepseek/deepseek-v4-flash" -> "openrouter")
   PROVIDER="${MODEL%%/*}"
@@ -103,8 +103,8 @@ ${ROUTER_SECTION}
 YAML
   else
     # Different providers — declare both
-    LIGHT_API_URL="${PILOTDECK_LIGHT_API_URL:-${API_URL}}"
-    LIGHT_API_KEY="${PILOTDECK_LIGHT_API_KEY:-${API_KEY}}"
+    LIGHT_API_URL="${NUKEMAI_LIGHT_API_URL:-${API_URL}}"
+    LIGHT_API_KEY="${NUKEMAI_LIGHT_API_KEY:-${API_KEY}}"
     cat > "$CONFIG_FILE" <<YAML
 schemaVersion: 1
 agent:
@@ -133,51 +133,51 @@ ${ROUTER_SECTION}
 YAML
   fi
 
-  echo "[pilotdeck-docker] Generated config at $CONFIG_FILE (provider=$PROVIDER, model=$MODEL, light=$LIGHT_MODEL)"
+  echo "[nukemai-docker] Generated config at $CONFIG_FILE (provider=$PROVIDER, model=$MODEL, light=$LIGHT_MODEL)"
 fi
 
 # ── Forward proxy env vars ────────────────────────────────────────────
-if [ -n "${PILOTDECK_PROXY:-}" ]; then
-  export http_proxy="$PILOTDECK_PROXY"
-  export https_proxy="$PILOTDECK_PROXY"
-  export HTTP_PROXY="$PILOTDECK_PROXY"
-  export HTTPS_PROXY="$PILOTDECK_PROXY"
-  echo "[pilotdeck-docker] Proxy set to $PILOTDECK_PROXY"
+if [ -n "${NUKEMAI_PROXY:-}" ]; then
+  export http_proxy="$NUKEMAI_PROXY"
+  export https_proxy="$NUKEMAI_PROXY"
+  export HTTP_PROXY="$NUKEMAI_PROXY"
+  export HTTPS_PROXY="$NUKEMAI_PROXY"
+  echo "[nukemai-docker] Proxy set to $NUKEMAI_PROXY"
 fi
 
-echo "[pilotdeck-docker] Starting PilotDeck (gateway + UI server)..."
-echo "[pilotdeck-docker] Config: $CONFIG_FILE"
-echo "[pilotdeck-docker] UI will be available at http://0.0.0.0:${SERVER_PORT:-3001}"
+echo "[nukemai-docker] Starting NukemAI (gateway + UI server)..."
+echo "[nukemai-docker] Config: $CONFIG_FILE"
+echo "[nukemai-docker] UI will be available at http://0.0.0.0:${SERVER_PORT:-3001}"
 
 # ── Remove stale auth token so the bridge never uses a leftover value ──
 rm -f "$PILOT_HOME/server-token"
 
 # ── Start gateway + UI server via concurrently ────────────────────────
-# The bridge retries for PILOTDECK_BRIDGE_TIMEOUT ms (default 30s) which
+# The bridge retries for NUKEMAI_BRIDGE_TIMEOUT ms (default 30s) which
 # may be too short on cold Docker starts. We first wait for the gateway
 # health endpoint before launching the bridge, eliminating the race.
 cd /app
 
-GATEWAY_PORT="${PILOTDECK_GATEWAY_PORT:-18789}"
+GATEWAY_PORT="${NUKEMAI_GATEWAY_PORT:-18789}"
 GATEWAY_HEALTH_URL="http://127.0.0.1:${GATEWAY_PORT}/health"
-GATEWAY_READY_TIMEOUT="${PILOTDECK_GATEWAY_READY_TIMEOUT:-120}"
+GATEWAY_READY_TIMEOUT="${NUKEMAI_GATEWAY_READY_TIMEOUT:-120}"
 
 wait_for_gateway() {
-  echo "[pilotdeck-docker] Waiting for gateway to become ready (timeout=${GATEWAY_READY_TIMEOUT}s)..."
+  echo "[nukemai-docker] Waiting for gateway to become ready (timeout=${GATEWAY_READY_TIMEOUT}s)..."
   local elapsed=0
   while [ "$elapsed" -lt "$GATEWAY_READY_TIMEOUT" ]; do
     if curl -sf "$GATEWAY_HEALTH_URL" > /dev/null 2>&1; then
-      echo "[pilotdeck-docker] Gateway is ready (took ${elapsed}s)."
+      echo "[nukemai-docker] Gateway is ready (took ${elapsed}s)."
       return 0
     fi
     sleep 1
     elapsed=$((elapsed + 1))
   done
-  echo "[pilotdeck-docker] WARNING: Gateway did not become ready within ${GATEWAY_READY_TIMEOUT}s, starting bridge anyway." >&2
+  echo "[nukemai-docker] WARNING: Gateway did not become ready within ${GATEWAY_READY_TIMEOUT}s, starting bridge anyway." >&2
   return 0
 }
 
-node dist/src/cli/pilotdeck.js server &
+node dist/src/cli/nukemai.js server &
 GATEWAY_PID=$!
 
 wait_for_gateway

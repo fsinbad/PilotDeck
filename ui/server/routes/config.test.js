@@ -13,7 +13,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   delete process.env.PILOT_HOME;
-  delete process.env.PILOTDECK_CONFIG_PATH;
+  delete process.env.NUKEMAI_CONFIG_PATH;
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -285,8 +285,8 @@ describe('config routes invalid YAML fallback', () => {
   });
 
   it('rejects reload without applying defaults when YAML is invalid', async () => {
-    const reloadPilotDeckConfig = vi.fn(async () => ({ processEnv: { reloaded: true } }));
-    const { request } = await createInvalidYamlConfigApp('schemaVersion: 1\nmodel:\n  providers: [\n', { reloadPilotDeckConfig });
+    const reloadNukemAIConfig = vi.fn(async () => ({ processEnv: { reloaded: true } }));
+    const { request } = await createInvalidYamlConfigApp('schemaVersion: 1\nmodel:\n  providers: [\n', { reloadNukemAIConfig });
 
     const response = await request('/api/config/reload', { method: 'POST' });
 
@@ -294,7 +294,7 @@ describe('config routes invalid YAML fallback', () => {
     expect(response.body.configDisabled).toBe(true);
     expect(response.body.validation.valid).toBe(false);
     expect(response.body.validation.errors[0]).toMatch(/^Invalid YAML:/);
-    expect(reloadPilotDeckConfig).not.toHaveBeenCalled();
+    expect(reloadNukemAIConfig).not.toHaveBeenCalled();
   });
 
   it('rejects structured config saves without overwriting invalid YAML', async () => {
@@ -314,23 +314,23 @@ describe('config routes invalid YAML fallback', () => {
 });
 
 async function createConfigApp() {
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({
+  vi.doMock('../services/nukemaiConfigWatcher.js', () => ({
     suppressNextWatchEvent: vi.fn(),
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({
-    reloadPilotDeckConfig: vi.fn(async () => undefined),
+  vi.doMock('../services/nukemaiConfigReloader.js', () => ({
+    reloadNukemAIConfig: vi.fn(async () => undefined),
   }));
-  vi.doMock('../services/pilotdeckConfig.js', async () => {
-    const actual = await vi.importActual('../services/pilotdeckConfig.js');
+  vi.doMock('../services/nukemaiConfig.js', async () => {
+    const actual = await vi.importActual('../services/nukemaiConfig.js');
     return {
       ...actual,
-      readPilotDeckConfigFile: vi.fn(() => ({ exists: false, configPath: '', config: {}, rawYaml: {} })),
-      writePilotDeckConfig: vi.fn(),
-      writeRawPilotDeckYaml: vi.fn(),
+      readNukemAIConfigFile: vi.fn(() => ({ exists: false, configPath: '', config: {}, rawYaml: {} })),
+      writeNukemAIConfig: vi.fn(),
+      writeRawNukemAIYaml: vi.fn(),
     };
   });
-  vi.doMock('../pilotdeck-bridge.js', () => ({
-    getPilotDeckGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
+  vi.doMock('../nukemai-bridge.js', () => ({
+    getNukemAIGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
   }));
 
   const { default: configRoutes } = await import('./config.js');
@@ -358,24 +358,24 @@ async function requestBodyJson(app, path, init = {}) {
 }
 
 async function createInvalidYamlConfigApp(initialRaw, overrides = {}) {
-  const pilotHome = mkdtempSync(join(tmpdir(), 'pilotdeck-config-route-'));
+  const pilotHome = mkdtempSync(join(tmpdir(), 'nukemai-config-route-'));
   tempDirs.push(pilotHome);
-  const configPath = join(pilotHome, 'pilotdeck.yaml');
+  const configPath = join(pilotHome, 'nukemai.yaml');
   writeFileSync(configPath, initialRaw, 'utf8');
 
   process.env.PILOT_HOME = pilotHome;
-  process.env.PILOTDECK_CONFIG_PATH = configPath;
+  process.env.NUKEMAI_CONFIG_PATH = configPath;
 
   vi.resetModules();
-  vi.doUnmock('../services/pilotdeckConfig.js');
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({
+  vi.doUnmock('../services/nukemaiConfig.js');
+  vi.doMock('../services/nukemaiConfigWatcher.js', () => ({
     suppressNextWatchEvent: vi.fn(),
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({
-    reloadPilotDeckConfig: overrides.reloadPilotDeckConfig ?? vi.fn(async () => ({ processEnv: { reloaded: true } })),
+  vi.doMock('../services/nukemaiConfigReloader.js', () => ({
+    reloadNukemAIConfig: overrides.reloadNukemAIConfig ?? vi.fn(async () => ({ processEnv: { reloaded: true } })),
   }));
-  vi.doMock('../pilotdeck-bridge.js', () => ({
-    getPilotDeckGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
+  vi.doMock('../nukemai-bridge.js', () => ({
+    getNukemAIGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
   }));
 
   const { default: configRoutes } = await import('./config.js');

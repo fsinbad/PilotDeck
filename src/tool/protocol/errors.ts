@@ -1,4 +1,4 @@
-export type PilotDeckToolErrorCode =
+export type NukemAIToolErrorCode =
   | "tool_not_found"
   | "invalid_tool_input"
   | "permission_denied"
@@ -16,35 +16,35 @@ export type PilotDeckToolErrorCode =
   | "plan_mode_violation"
   | "ask_mode_violation";
 
-export type PilotDeckToolError = {
-  code: PilotDeckToolErrorCode;
+export type NukemAIToolError = {
+  code: NukemAIToolErrorCode;
   message: string;
   cause?: unknown;
   details?: Record<string, unknown>;
 };
 
-export class PilotDeckToolRuntimeError extends Error {
-  readonly code: PilotDeckToolErrorCode;
+export class NukemAIToolRuntimeError extends Error {
+  readonly code: NukemAIToolErrorCode;
   readonly details?: Record<string, unknown>;
 
-  constructor(code: PilotDeckToolErrorCode, message: string, details?: Record<string, unknown>) {
+  constructor(code: NukemAIToolErrorCode, message: string, details?: Record<string, unknown>) {
     super(message);
-    this.name = "PilotDeckToolRuntimeError";
+    this.name = "NukemAIToolRuntimeError";
     this.code = code;
     this.details = details;
   }
 }
 
 export function toolError(
-  code: PilotDeckToolErrorCode,
+  code: NukemAIToolErrorCode,
   message: string,
   details?: Record<string, unknown>,
-): PilotDeckToolError {
+): NukemAIToolError {
   return { code, message, details };
 }
 
-export function normalizeToolError(error: unknown): PilotDeckToolError {
-  if (error instanceof PilotDeckToolRuntimeError) {
+export function normalizeToolError(error: unknown): NukemAIToolError {
+  if (error instanceof NukemAIToolRuntimeError) {
     return toolError(error.code, error.message, error.details);
   }
 

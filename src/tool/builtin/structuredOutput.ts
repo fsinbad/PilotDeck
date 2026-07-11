@@ -1,10 +1,10 @@
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
+import type { NukemAIToolDefinition } from "../protocol/types.js";
 
 export type StructuredOutputInput = {
   value: unknown;
 };
 
-export function createStructuredOutputTool(): PilotDeckToolDefinition<StructuredOutputInput> {
+export function createStructuredOutputTool(): NukemAIToolDefinition<StructuredOutputInput> {
   return {
     name: "structured_output",
     aliases: ["StructuredOutput"],

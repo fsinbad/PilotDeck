@@ -1,12 +1,12 @@
-import type { PilotDeckHookInput } from "../protocol/input.js";
-import type { PilotDeckHookCommand } from "../protocol/settings.js";
+import type { NukemAIHookInput } from "../protocol/input.js";
+import type { NukemAIHookCommand } from "../protocol/settings.js";
 import { parseHookOutput } from "./parseHookOutput.js";
 import type { CommandHookExecutionResult } from "./CommandHookExecutor.js";
 
 export type PromptHookEvaluator = (input: {
   prompt: string;
   model?: string;
-  hookInput: PilotDeckHookInput;
+  hookInput: NukemAIHookInput;
   signal?: AbortSignal;
 }) => Promise<string>;
 
@@ -14,8 +14,8 @@ export class PromptHookExecutor {
   constructor(private readonly evaluator?: PromptHookEvaluator) {}
 
   async execute(options: {
-    hook: Extract<PilotDeckHookCommand, { type: "prompt" }>;
-    hookInput: PilotDeckHookInput;
+    hook: Extract<NukemAIHookCommand, { type: "prompt" }>;
+    hookInput: NukemAIHookInput;
     signal?: AbortSignal;
   }): Promise<CommandHookExecutionResult> {
     if (!this.evaluator) {

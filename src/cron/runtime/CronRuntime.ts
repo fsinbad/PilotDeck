@@ -5,7 +5,7 @@ import {
   UNATTENDED_SESSION_EXCLUDED_TOOLS,
 } from "../../always-on/runtime/SessionConfigOverrides.js";
 import type { Gateway } from "../../gateway/index.js";
-import type { PilotDeckToolDefinition } from "../../tool/index.js";
+import type { NukemAIToolDefinition } from "../../tool/index.js";
 import type { CronConfig } from "../config/parseCronConfig.js";
 import type {
   CronCreateInput,
@@ -70,7 +70,7 @@ export class CronRuntime {
   private readonly telemetry?: TelemetryClient;
   private readonly onResultDelivery?: CronResultDeliveryHandler;
   private readonly sessionOverrides: SessionConfigOverrides;
-  private readonly tools: PilotDeckToolDefinition[];
+  private readonly tools: NukemAIToolDefinition[];
   private readonly activeRuns = new Map<string, CronActiveRun>();
   private readonly sharedActiveRunCount?: () => number;
   private gateway?: Gateway;
@@ -99,7 +99,7 @@ export class CronRuntime {
         ];
   }
 
-  getTools(): PilotDeckToolDefinition[] {
+  getTools(): NukemAIToolDefinition[] {
     if (!this.config.enabled) return [];
     return [...this.tools];
   }
@@ -200,7 +200,7 @@ export class CronRuntime {
 
   async createTask(input: CronCreateInput): Promise<CronCreateResult> {
     if (!this.config.enabled) {
-      throw new Error("Cron is disabled. Enable it in pilotdeck.yaml to create tasks.");
+      throw new Error("Cron is disabled. Enable it in nukemai.yaml to create tasks.");
     }
     const now = this.now();
     const taskId = this.uuid();

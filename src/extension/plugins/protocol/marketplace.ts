@@ -1,14 +1,14 @@
-import type { PilotDeckMarketplaceReference } from "./manifest.js";
+import type { NukemAIMarketplaceReference } from "./manifest.js";
 
-export type PilotDeckPluginMarketplaceStatus = "resolved" | "deferred";
+export type NukemAIPluginMarketplaceStatus = "resolved" | "deferred";
 
-export type PilotDeckMarketplaceResolution = {
-  status: PilotDeckPluginMarketplaceStatus;
-  reference: PilotDeckMarketplaceReference;
+export type NukemAIMarketplaceResolution = {
+  status: NukemAIPluginMarketplaceStatus;
+  reference: NukemAIMarketplaceReference;
   reason?: string;
 };
 
-export function resolveMarketplaceReference(reference: PilotDeckMarketplaceReference): PilotDeckMarketplaceResolution {
+export function resolveMarketplaceReference(reference: NukemAIMarketplaceReference): NukemAIMarketplaceResolution {
   if (reference.source === "git" || reference.source === "zip" || reference.source === "mcpb") {
     return {
       status: "deferred",

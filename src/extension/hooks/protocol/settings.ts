@@ -1,6 +1,6 @@
-import type { PilotDeckHookEvent } from "./events.js";
+import type { NukemAIHookEvent } from "./events.js";
 
-export type PilotDeckHookCommand =
+export type NukemAIHookCommand =
   | {
       type: "command";
       command: string;
@@ -47,12 +47,12 @@ export type PilotDeckHookCommand =
       statusMessage?: string;
     };
 
-export type PilotDeckHookMatcher = {
+export type NukemAIHookMatcher = {
   matcher?: string;
-  hooks: PilotDeckHookCommand[];
+  hooks: NukemAIHookCommand[];
   pluginName?: string;
   pluginId?: string;
   pluginRoot?: string;
 };
 
-export type PilotDeckHooksSettings = Partial<Record<PilotDeckHookEvent, PilotDeckHookMatcher[]>>;
+export type NukemAIHooksSettings = Partial<Record<NukemAIHookEvent, NukemAIHookMatcher[]>>;

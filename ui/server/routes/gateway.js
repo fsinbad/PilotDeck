@@ -3,15 +3,15 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { homedir } from 'os';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { suppressNextWatchEvent } from '../services/pilotdeckConfigWatcher.js';
-import { reloadPilotDeckConfig } from '../services/pilotdeckConfigReloader.js';
-import { readPilotDeckConfigFile } from '../services/pilotdeckConfig.js';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+import { suppressNextWatchEvent } from '../services/nukemaiConfigWatcher.js';
+import { reloadNukemAIConfig } from '../services/nukemaiConfigReloader.js';
+import { readNukemAIConfigFile } from '../services/nukemaiConfig.js';
+import { getNukemAIGateway } from '../nukemai-bridge.js';
 
 const router = express.Router();
 
-const PILOT_HOME = process.env.PILOT_HOME || join(homedir(), '.pilotdeck');
-const PILOTDECK_YAML = process.env.PILOTDECK_CONFIG_PATH || join(PILOT_HOME, 'pilotdeck.yaml');
+const PILOT_HOME = process.env.PILOT_HOME || join(homedir(), '.nukemai');
+const NUKEMAI_YAML = process.env.NUKEMAI_CONFIG_PATH || join(PILOT_HOME, 'nukemai.yaml');
 const WEIXIN_CREDS = join(PILOT_HOME, 'weixin-credentials.json');
 
 const FEISHU_TOKEN_URL = 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal';
@@ -34,22 +34,22 @@ const REGISTRATION_PATH = '/oauth/v1/app/registration';
 
 async function notifyGatewayReload() {
   try {
-    const gw = await getPilotDeckGateway();
+    const gw = await getNukemAIGateway();
     if (gw?.reloadConfig) await gw.reloadConfig();
   } catch { /* gateway unreachable */ }
 }
 
 function loadYaml() {
   try {
-    if (!existsSync(PILOTDECK_YAML)) return {};
-    return parseYaml(readFileSync(PILOTDECK_YAML, 'utf-8')) ?? {};
+    if (!existsSync(NUKEMAI_YAML)) return {};
+    return parseYaml(readFileSync(NUKEMAI_YAML, 'utf-8')) ?? {};
   } catch { return {}; }
 }
 
 function saveYaml(config) {
-  mkdirSync(dirname(PILOTDECK_YAML), { recursive: true });
+  mkdirSync(dirname(NUKEMAI_YAML), { recursive: true });
   suppressNextWatchEvent();
-  writeFileSync(PILOTDECK_YAML, stringifyYaml(config, { lineWidth: 0 }), 'utf-8');
+  writeFileSync(NUKEMAI_YAML, stringifyYaml(config, { lineWidth: 0 }), 'utf-8');
 }
 
 function maskValue(value) {
@@ -93,14 +93,14 @@ function writeWeComConfig(config, input) {
 
 async function persistConfigAndReload(config) {
   saveYaml(config);
-  const record = readPilotDeckConfigFile();
-  await reloadPilotDeckConfig(record.config);
+  const record = readNukemAIConfigFile();
+  await reloadNukemAIConfig(record.config);
   void notifyGatewayReload();
 }
 
 async function fetchJson(url) {
   const resp = await fetch(url, {
-    headers: { 'User-Agent': 'PilotDeck/1.0' },
+    headers: { 'User-Agent': 'NukemAI/1.0' },
     signal: AbortSignal.timeout(15_000),
   });
   const text = await resp.text();
@@ -302,8 +302,8 @@ router.get('/feishu/qr-poll', async (req, res) => {
       };
       saveYaml(config);
 
-      const record = readPilotDeckConfigFile();
-      await reloadPilotDeckConfig(record.config);
+      const record = readNukemAIConfigFile();
+      await reloadNukemAIConfig(record.config);
       void notifyGatewayReload();
 
       return res.json({
@@ -353,8 +353,8 @@ router.post('/feishu/save', async (req, res) => {
     };
     saveYaml(config);
 
-    const record = readPilotDeckConfigFile();
-    await reloadPilotDeckConfig(record.config);
+    const record = readNukemAIConfigFile();
+    await reloadNukemAIConfig(record.config);
     void notifyGatewayReload();
 
     res.json({ ok: true, message: '飞书配置已保存，重启后生效' });
@@ -371,8 +371,8 @@ router.post('/feishu/disable', async (_req, res) => {
     }
     saveYaml(config);
 
-    const record = readPilotDeckConfigFile();
-    await reloadPilotDeckConfig(record.config);
+    const record = readNukemAIConfigFile();
+    await reloadNukemAIConfig(record.config);
     void notifyGatewayReload();
 
     res.json({ ok: true });
@@ -472,8 +472,8 @@ router.post('/weixin/disable', async (_req, res) => {
     }
     saveYaml(config);
 
-    const record = readPilotDeckConfigFile();
-    await reloadPilotDeckConfig(record.config);
+    const record = readNukemAIConfigFile();
+    await reloadNukemAIConfig(record.config);
     void notifyGatewayReload();
 
     res.json({ ok: true });

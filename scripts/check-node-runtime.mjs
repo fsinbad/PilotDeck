@@ -18,7 +18,7 @@ function isAtLeastMinimum(version) {
 }
 
 function fail(message) {
-  console.error(`[pilotdeck] ${message}`);
+  console.error(`[nukemai] ${message}`);
   process.exit(1);
 }
 
@@ -35,7 +35,7 @@ process.emitWarning = (warning, typeOrOptions, ...args) => {
 const nodeVersion = process.versions.node;
 if (!isAtLeastMinimum(nodeVersion)) {
   fail(
-    `Node.js >=${minimumNodeVersionLabel} is required because PilotDeck uses node:sqlite. Current: v${nodeVersion}.`,
+    `Node.js >=${minimumNodeVersionLabel} is required because NukemAI uses node:sqlite. Current: v${nodeVersion}.`,
   );
 }
 

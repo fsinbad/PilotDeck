@@ -47,8 +47,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         addToast(detail.kind ?? 'error', detail.message);
       }
     };
-    window.addEventListener('pilotdeck:toast', handler);
-    return () => window.removeEventListener('pilotdeck:toast', handler);
+    window.addEventListener('nukemai:toast', handler);
+    return () => window.removeEventListener('nukemai:toast', handler);
   }, [addToast]);
 
   return (

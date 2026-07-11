@@ -27,6 +27,12 @@ function normalizeOpenAISchemaNode(node: unknown): unknown {
     normalized.items = {};
   }
 
+  // Some providers (e.g. Moonshot/Kimi) reject schema nodes that have `enum`
+  // or `const` but no `type`. Infer `type: "string"` for those cases.
+  if (!("type" in normalized) && ("enum" in normalized || "const" in normalized)) {
+    normalized.type = "string";
+  }
+
   return normalized;
 }
 

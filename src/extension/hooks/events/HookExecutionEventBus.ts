@@ -1,34 +1,34 @@
-import type { PilotDeckHookEvent } from "../protocol/events.js";
+import type { NukemAIHookEvent } from "../protocol/events.js";
 
-export type PilotDeckHookExecutionEvent =
+export type NukemAIHookExecutionEvent =
   | {
       type: "started";
       hookName: string;
-      hookEvent: PilotDeckHookEvent;
+      hookEvent: NukemAIHookEvent;
     }
   | {
       type: "response";
       hookName: string;
-      hookEvent: PilotDeckHookEvent;
+      hookEvent: NukemAIHookEvent;
       stdout: string;
       stderr: string;
       exitCode?: number;
       outcome: "success" | "blocking" | "non_blocking_error" | "cancelled" | "timeout";
     };
 
-export type PilotDeckHookExecutionEventHandler = (event: PilotDeckHookExecutionEvent) => void;
+export type NukemAIHookExecutionEventHandler = (event: NukemAIHookExecutionEvent) => void;
 
 export class HookExecutionEventBus {
-  private handlers = new Set<PilotDeckHookExecutionEventHandler>();
+  private handlers = new Set<NukemAIHookExecutionEventHandler>();
 
-  subscribe(handler: PilotDeckHookExecutionEventHandler): () => void {
+  subscribe(handler: NukemAIHookExecutionEventHandler): () => void {
     this.handlers.add(handler);
     return () => {
       this.handlers.delete(handler);
     };
   }
 
-  emit(event: PilotDeckHookExecutionEvent): void {
+  emit(event: NukemAIHookExecutionEvent): void {
     for (const handler of this.handlers) {
       handler(event);
     }

@@ -1,6 +1,6 @@
-import type { PilotDeckHookEvent } from "./events.js";
+import type { NukemAIHookEvent } from "./events.js";
 
-export type PilotDeckHookBaseInput = {
+export type NukemAIHookBaseInput = {
   sessionId: string;
   transcriptPath: string;
   cwd: string;
@@ -9,16 +9,16 @@ export type PilotDeckHookBaseInput = {
   agentType?: string;
 };
 
-export type PilotDeckHookInput = PilotDeckHookBaseInput &
+export type NukemAIHookInput = NukemAIHookBaseInput &
   Record<string, unknown> & {
-    hookEventName: PilotDeckHookEvent;
+    hookEventName: NukemAIHookEvent;
   };
 
 export function createHookInput(
-  event: PilotDeckHookEvent,
-  base: PilotDeckHookBaseInput,
+  event: NukemAIHookEvent,
+  base: NukemAIHookBaseInput,
   payload: Record<string, unknown> = {},
-): PilotDeckHookInput {
+): NukemAIHookInput {
   return {
     ...base,
     ...payload,
@@ -26,7 +26,7 @@ export function createHookInput(
   };
 }
 
-export function toLegacyHookInput(input: PilotDeckHookInput): Record<string, unknown> {
+export function toLegacyHookInput(input: NukemAIHookInput): Record<string, unknown> {
   const {
     hookEventName,
     sessionId,

@@ -1,4 +1,4 @@
-export type SessionProvider = 'claude' | 'cursor' | 'codex' | 'gemini' | 'pilotdeck';
+export type SessionProvider = 'claude' | 'cursor' | 'codex' | 'gemini' | 'nukemai';
 export type ProjectSessionKind = 'background_task';
 
 export type AppTab = 'home' | 'chat' | 'always-on' | 'files' | 'shell' | 'git' | 'tasks' | 'memory' | 'skills' | 'preview' | 'dashboard' | `plugin:${string}`;

@@ -116,7 +116,7 @@ export type InProcessGatewayOptions = {
   reloadConfig?: () => Promise<ReloadConfigResult>;
   /**
    * Pluggable extension/MCP reload handler wired by `createLocalGateway`.
-   * Unlike `reloadConfig`, this does not depend on `pilotdeck.yaml` changing.
+   * Unlike `reloadConfig`, this does not depend on `nukemai.yaml` changing.
    */
   reloadExtensions?: (input?: import("../protocol/types.js").ReloadExtensionsInput) => Promise<import("../protocol/types.js").ReloadExtensionsResult>;
   /**
@@ -137,7 +137,7 @@ export type InProcessGatewayOptions = {
    */
   refreshConfigBeforeTurn?: () => Promise<void>;
   /**
-   * Authoritative skill CRUD manager backed by `~/.pilotdeck/skills/`.
+   * Authoritative skill CRUD manager backed by `~/.nukemai/skills/`.
    * Wired by `createLocalGateway` so every host (CLI, TUI, Web UI bridge,
    * SDK) reads and writes the same skill directory the agent loads from.
    */
@@ -507,14 +507,14 @@ export class InProcessGateway implements Gateway {
             event: "gateway_submit_failed",
             code: "gateway_submit_failed",
             message,
-            userHint: "PilotDeck failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
+            userHint: "NukemAI failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
           }));
           const gatewayEvent: GatewayEvent = {
             type: "error",
             code: "gateway_submit_failed",
             message,
             recoverable: false,
-            userHint: "PilotDeck failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
+            userHint: "NukemAI failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
           };
           this.recordActiveTurnEvent(input.sessionKey, gatewayEvent);
           queue.enqueue(gatewayEvent);
@@ -612,7 +612,7 @@ export class InProcessGateway implements Gateway {
     try {
       await this.options.recordAgentStatusMessage(input);
     } catch (error) {
-      console.warn("[pilotdeck] failed to record gateway status message:", error);
+      console.warn("[nukemai] failed to record gateway status message:", error);
     }
   }
 
@@ -1316,7 +1316,7 @@ export function mapAgentEvent(event: AgentEvent, runId: string): GatewayEvent[] 
       if (totalBytes > PERSIST_THRESHOLD) {
         const dir = resolve(
           tmpdir(),
-          "pilotdeck-tool-results",
+          "nukemai-tool-results",
           safeGatewayPathPart(event.sessionId),
           safeGatewayPathPart(event.turnId),
         );

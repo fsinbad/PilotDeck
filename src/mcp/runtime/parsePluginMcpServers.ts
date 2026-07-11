@@ -1,7 +1,7 @@
 /**
  * Convert the loosely-typed `mcpServers: Record<string, unknown>` blob produced
  * by `PluginRuntime.mcpServers()` (each plugin's manifest) into the strict
- * `PilotDeckMcpServerSpec[]` consumed by `McpRuntime`.
+ * `NukemAIMcpServerSpec[]` consumed by `McpRuntime`.
  *
  * Behaviour parity with the legacy upstream plugin manifest schema:
  *   - `command` ⇒ stdio transport (`args`/`env`/`cwd` optional).
@@ -11,7 +11,7 @@
  */
 
 import { homedir } from "node:os";
-import type { PilotDeckMcpServerSpec } from "../protocol/types.js";
+import type { NukemAIMcpServerSpec } from "../protocol/types.js";
 
 function expandHome(s: string): string {
   if (s.startsWith("~/")) return homedir() + s.slice(1);
@@ -21,14 +21,14 @@ function expandHome(s: string): string {
 }
 
 export type ParsePluginMcpServersResult = {
-  servers: PilotDeckMcpServerSpec[];
+  servers: NukemAIMcpServerSpec[];
   diagnostics: { id: string; message: string }[];
 };
 
 export function parsePluginMcpServers(
   raw: Record<string, unknown> | undefined,
 ): ParsePluginMcpServersResult {
-  const servers: PilotDeckMcpServerSpec[] = [];
+  const servers: NukemAIMcpServerSpec[] = [];
   const diagnostics: { id: string; message: string }[] = [];
   if (!raw || typeof raw !== "object") {
     return { servers, diagnostics };

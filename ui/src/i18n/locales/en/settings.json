@@ -316,7 +316,7 @@
     "apiDocsLink": "API Documentation",
     "documentation": {
       "title": "External API Documentation",
-      "description": "Learn how to use the external API to trigger PilotDeck sessions from your applications.",
+      "description": "Learn how to use the external API to trigger NukemAI sessions from your applications.",
       "viewLink": "View API Documentation →"
     },
     "loading": "Loading...",
@@ -366,8 +366,8 @@
       "gemini": {
         "description": "Google Gemini AI assistant"
       },
-      "pilotdeck": {
-        "description": "OpenBMB PilotDeck AI assistant"
+      "nukemai": {
+        "description": "OpenBMB NukemAI AI assistant"
       }
     },
     "connectionStatus": "Connection Status",
@@ -466,7 +466,7 @@
   "mcpServers": {
     "title": "MCP Servers",
     "description": {
-      "pilotdeck": "Model Context Protocol servers provide additional tools and data sources to PilotDeck",
+      "nukemai": "Model Context Protocol servers provide additional tools and data sources to NukemAI",
       "cursor": "Model Context Protocol servers provide additional tools and data sources to Cursor",
       "codex": "Model Context Protocol servers provide additional tools and data sources to Codex"
     },
@@ -499,7 +499,7 @@
   },
   "mcpConfig": {
     "title": "MCP Servers",
-    "description": "Edit PilotDeck MCP config. Global config lives in ~/.pilotdeck/mcp.json; project config lives in .pilotdeck/mcp.json and overrides global servers with the same name.",
+    "description": "Edit NukemAI MCP config. Global config lives in ~/.nukemai/mcp.json; project config lives in .nukemai/mcp.json and overrides global servers with the same name.",
     "project": "Project for project-scoped config",
     "scopes": {
       "global": "Global",
@@ -544,7 +544,7 @@
     }
   },
   "pilotDeckConfig": {
-    "loading": "Loading PilotDeck config...",
+    "loading": "Loading NukemAI config...",
     "header": {
       "configFile": "Config file",
       "configPreview": "Config preview",
@@ -643,7 +643,7 @@
       },
       "memory": {
         "label": "Memory",
-        "description": "PilotDeck memory service"
+        "description": "NukemAI memory service"
       },
       "tools": {
         "label": "Search",
@@ -655,7 +655,7 @@
       },
       "router": {
         "label": "Router",
-        "description": "PilotDeck Router"
+        "description": "NukemAI Router"
       },
       "gateway": {
         "label": "Gateway",
@@ -678,13 +678,13 @@
           "apiTimeout": { "label": "API timeout (ms)", "description": "Per-request upstream timeout." },
           "databasePath": { "label": "Database path", "description": "SQLite auth/projects database (~ expands to home)." },
           "workspacesRoot": { "label": "Workspaces root", "description": "Directory under which projects are scanned." },
-          "proxyUrl": { "label": "HTTPS proxy", "description": "Outbound HTTPS proxy URL. Applies to both Gateway and UI Server (proxy.url in pilotdeck.yaml)." },
-          "proxyNoProxy": { "label": "No-proxy list", "description": "Comma-separated hostnames/IPs that bypass the proxy (proxy.noProxy in pilotdeck.yaml). 127.0.0.1 and localhost are always excluded." }
+          "proxyUrl": { "label": "HTTPS proxy", "description": "Outbound HTTPS proxy URL. Applies to both Gateway and UI Server (proxy.url in nukemai.yaml)." },
+          "proxyNoProxy": { "label": "No-proxy list", "description": "Comma-separated hostnames/IPs that bypass the proxy (proxy.noProxy in nukemai.yaml). 127.0.0.1 and localhost are always excluded." }
         }
       },
       "officePreview": {
         "title": "Office File Preview Service",
-        "description": "Configure how PilotDeck previews Word, Excel, and PowerPoint files. Selecting None disables Office conversion.",
+        "description": "Configure how NukemAI previews Word, Excel, and PowerPoint files. Selecting None disables Office conversion.",
         "fields": {
           "service": {
             "label": "Preview service",
@@ -797,7 +797,7 @@
           "label": "Subagents default",
           "description": "Default model for subagents on non-router paths.",
           "inherit": "Inherit main agent model",
-          "routerNote": "When PilotDeck Router or Token Saver is enabled, subagent requests enter the router first. By default, the subagent policy re-judges each subagent turn and picks a tier model. This default only acts as a direct subagent fallback or inherited baseline; it does not override the subagent routing policy in Router advanced settings."
+          "routerNote": "When NukemAI Router or Token Saver is enabled, subagent requests enter the router first. By default, the subagent policy re-judges each subagent turn and picks a tier model. This default only acts as a direct subagent fallback or inherited baseline; it does not override the subagent routing policy in Router advanced settings."
         }
       },
       "customEnv": {
@@ -984,7 +984,7 @@
         }
       },
       "router": {
-        "title": "PilotDeck Router",
+        "title": "NukemAI Router",
         "description": "Embedded router for fan-out across providers (tier-based routing, token saver, auto-orchestrate).",
         "enabled": { "label": "Enabled", "description": "When on, agents use the router instead of the configured provider directly." },
         "advancedToggle": "Advanced settings",
@@ -1094,7 +1094,7 @@
   },
   "pluginSettings": {
     "title": "Plugins",
-    "description": "Extend the interface with custom plugins. Install from git or drop a folder in ~/.pilotdeck/plugins/",
+    "description": "Extend the interface with custom plugins. Install from git or drop a folder in ~/.nukemai/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Install",
     "installing": "Installing…",
@@ -1203,7 +1203,7 @@
       "websocketUrl": "WebSocket URL",
       "dmPolicy": "DM Policy",
       "groupPolicy": "Group Policy",
-      "policyHint": "Basic policies are written to pilotdeck.yaml; edit YAML later for finer user or group allowlists.",
+      "policyHint": "Basic policies are written to nukemai.yaml; edit YAML later for finer user or group allowlists.",
       "saveSuccess": "WeCom config saved"
     }
   }

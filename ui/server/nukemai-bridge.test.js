@@ -3,23 +3,23 @@ import { describe, expect, it } from 'vitest';
 import {
     gatewayEventToFrames,
     isGatewayUnavailableError,
-} from './pilotdeck-bridge.js';
+} from './nukemai-bridge.js';
 
 describe('gatewayEventToFrames agent status errors', () => {
     it('maps tool result detail availability to a mergeable tool_result frame', () => {
         const frames = gatewayEventToFrames({
             type: 'tool_result_detail_available',
             toolCallId: 'call-large',
-            resultPath: '/tmp/pilotdeck/tool-result.txt',
+            resultPath: '/tmp/nukemai/tool-result.txt',
             fullText: 'x'.repeat(100000),
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', 'nukemai');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
             kind: 'tool_result',
             toolId: 'call-large',
-            content: 'Full tool result persisted at /tmp/pilotdeck/tool-result.txt',
-            resultPath: '/tmp/pilotdeck/tool-result.txt',
+            content: 'Full tool result persisted at /tmp/nukemai/tool-result.txt',
+            resultPath: '/tmp/nukemai/tool-result.txt',
         });
         expect(frames[0].fullText).toBeUndefined();
     });
@@ -30,7 +30,7 @@ describe('gatewayEventToFrames agent status errors', () => {
             toolCallId: 'call-large',
             ok: true,
             resultPreview: `head\n${'x'.repeat(50000)}\ntail`,
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', 'nukemai');
 
         expect(frames).toHaveLength(1);
         expect(frames[0].kind).toBe('tool_result');
@@ -49,7 +49,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 userHint: 'Increase max output tokens.',
                 visible: true,
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', 'nukemai');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -71,7 +71,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 userHintI18n: { key: 'chat:agentStatus.modelRequestFailed.actions.settingsDefault' },
                 visible: true,
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', 'nukemai');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -97,7 +97,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 scope: 'turn',
                 source: 'web_bridge',
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', 'nukemai');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -113,22 +113,22 @@ describe('gatewayEventToFrames agent status errors', () => {
             type: 'agent_status',
             event: 'gateway_unavailable',
             detail: {
-                message: 'PilotDeck gateway is unavailable.',
+                message: 'NukemAI gateway is unavailable.',
                 code: 'gateway_unavailable',
                 severity: 'error',
                 visible: true,
-                userHint: 'Start or restart the PilotDeck gateway, then retry this message.',
+                userHint: 'Start or restart the NukemAI gateway, then retry this message.',
                 scope: 'preflight',
                 source: 'web_bridge',
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', 'nukemai');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
             kind: 'error',
-            content: 'PilotDeck gateway is unavailable.',
+            content: 'NukemAI gateway is unavailable.',
             code: 'gateway_unavailable',
-            userHint: 'Start or restart the PilotDeck gateway, then retry this message.',
+            userHint: 'Start or restart the NukemAI gateway, then retry this message.',
         });
     });
 });
@@ -138,7 +138,7 @@ describe('isGatewayUnavailableError', () => {
         expect(isGatewayUnavailableError(new Error('Gateway WebSocket is not connected.'))).toBe(true);
         expect(isGatewayUnavailableError(new Error('Gateway WebSocket closed.'))).toBe(true);
         expect(isGatewayUnavailableError(new Error('Gateway closed during hello: auth_failed'))).toBe(true);
-        expect(isGatewayUnavailableError(new Error('[pilotdeck-bridge] gateway connect failed after 60000ms'))).toBe(true);
+        expect(isGatewayUnavailableError(new Error('[nukemai-bridge] gateway connect failed after 60000ms'))).toBe(true);
     });
 
     it('does not classify generic bridge failures as gateway unavailable', () => {

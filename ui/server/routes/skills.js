@@ -3,7 +3,7 @@
  * contract that `ui/src/components/main-content-v2/SkillsV2.tsx` was
  * built against into the gateway's `skill_*` RPCs. The gateway is the
  * authoritative skill manager (see `src/extension/skills/SkillManager.ts`)
- * backed by `~/.pilotdeck/skills/` and `<project>/.pilotdeck/skills/`,
+ * backed by `~/.nukemai/skills/` and `<project>/.nukemai/skills/`,
  * so the UI and the agent always read from the same place.
  *
  * Two endpoints stay file-based for now because they don't map cleanly
@@ -17,7 +17,7 @@
  *
  *   - `/clawhub/*` — shells out to the `clawhub` CLI which writes its
  *     output to disk by itself. We just retarget the install root to
- *     `~/.pilotdeck/skills/` so installs end up where the agent looks.
+ *     `~/.nukemai/skills/` so installs end up where the agent looks.
  *
  * Anything else (list/read/write/create/delete/import/validate/scan) is
  * a one-line forward to the gateway. Errors raised by `SkillManagerError`
@@ -32,7 +32,7 @@ import os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import multer from 'multer';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+import { getNukemAIGateway } from '../nukemai-bridge.js';
 import { resolvePilotHome } from '../utils/pilotPaths.js';
 import { moveDirectoryAcrossDevicesSafe } from '../utils/fileMoves.js';
 
@@ -57,7 +57,7 @@ const upload = multer({
 
 const SLUG_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/;
 const PILOT_HOME = resolvePilotHome(process.env);
-const PROJECT_DIR = '.pilotdeck';
+const PROJECT_DIR = '.nukemai';
 const SKILLS_SUBDIR = 'skills';
 
 function safeSlug(slug) {
@@ -194,7 +194,7 @@ function sendGatewayError(res, err) {
  * timeout) surface as plain `Error` and route to the 500 fallback.
  */
 async function callGateway(method, params) {
-  const gw = await getPilotDeckGateway();
+  const gw = await getNukemAIGateway();
   return gw[method](params);
 }
 
@@ -336,8 +336,8 @@ router.post('/scan', async (req, res) => {
 // ---------------------------------------------------------------------------
 // /import-upload — multipart picker upload. Multipart bodies don't fit the
 // WS RPC, so we stage on disk and then ask the gateway to validate. The
-// final move lands in `~/.pilotdeck/skills/<slug>` or
-// `<project>/.pilotdeck/skills/<slug>` so the agent picks it up on next
+// final move lands in `~/.nukemai/skills/<slug>` or
+// `<project>/.nukemai/skills/<slug>` so the agent picks it up on next
 // session refresh.
 // ---------------------------------------------------------------------------
 
@@ -471,7 +471,7 @@ router.post('/import-upload', upload.array('files', 500), async (req, res) => {
 // ---------------------------------------------------------------------------
 // ClawHub passthrough — kept here because the binary writes to disk and
 // reading it back into the gateway would just add a layer.  We retarget
-// the install root to `~/.pilotdeck/skills/` (or `<project>/.pilotdeck/
+// the install root to `~/.nukemai/skills/` (or `<project>/.nukemai/
 // skills/`) so installed skills end up where the agent looks.
 // ---------------------------------------------------------------------------
 

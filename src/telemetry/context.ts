@@ -88,7 +88,7 @@ function looksLikeDocker(env: Record<string, string | undefined>): boolean {
 function looksLikeDesktopInstaller(): boolean {
   if (process.versions.electron) return true;
   const execLower = process.execPath.toLowerCase();
-  return execLower.includes("pilotdeck.app") || execLower.endsWith("pilotdeck.exe");
+  return execLower.includes("nukemai.app") || execLower.endsWith("nukemai.exe");
 }
 
 function looksLikeSourceCheckout(): boolean {
@@ -107,8 +107,8 @@ function looksLikeSourceCheckout(): boolean {
 function looksLikeCurlInstaller(): boolean {
   const entry = (process.argv[1] ?? "").toLowerCase();
   return (
-    entry.includes("/.local/bin/pilotdeck") ||
-    entry.includes("/usr/local/bin/pilotdeck")
+    entry.includes("/.local/bin/nukemai") ||
+    entry.includes("/usr/local/bin/nukemai")
   );
 }
 
@@ -119,7 +119,7 @@ function looksLikeNpmBinary(env: Record<string, string | undefined>): boolean {
 }
 
 function resolveAppVersion(env: Record<string, string | undefined>): string {
-  const fromEnv = env.PILOTDECK_VERSION ?? env.npm_package_version;
+  const fromEnv = env.NUKEMAI_VERSION ?? env.npm_package_version;
   if (fromEnv) return fromEnv;
   try {
     const file = resolve(dirname(fileURLToPath(import.meta.url)), "../../../package.json");
@@ -134,7 +134,7 @@ function resolveAppVersion(env: Record<string, string | undefined>): string {
 }
 
 function resolveAppCommitHash(env: Record<string, string | undefined>): string {
-  const fromEnv = env.COMMIT_HASH ?? env.GIT_COMMIT ?? env.PILOTDECK_GIT_SHA ?? env.GIT_SHA;
+  const fromEnv = env.COMMIT_HASH ?? env.GIT_COMMIT ?? env.NUKEMAI_GIT_SHA ?? env.GIT_SHA;
   if (fromEnv) {
     return fromEnv;
   }
@@ -165,8 +165,8 @@ function buildRuntimeContextCacheKey(
 ): string {
   return [
     pilotHome ?? env.PILOT_HOME ?? "default",
-    env.COMMIT_HASH ?? env.GIT_COMMIT ?? env.PILOTDECK_GIT_SHA ?? env.GIT_SHA ?? "",
-    env.PILOTDECK_VERSION ?? env.npm_package_version ?? "",
+    env.COMMIT_HASH ?? env.GIT_COMMIT ?? env.NUKEMAI_GIT_SHA ?? env.GIT_SHA ?? "",
+    env.NUKEMAI_VERSION ?? env.npm_package_version ?? "",
     process.execPath,
     process.argv[1] ?? "",
   ].join("|");

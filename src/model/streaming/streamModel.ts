@@ -86,7 +86,7 @@ export async function complete(
         if (attempt < maxRetries && isRetryableRequestError(error)) {
           const delayMs = retryBaseDelay * (attempt + 1);
           console.warn(
-            `[PilotDeck] complete() retry: ${(error as Error).message} ` +
+            `[NukemAI] complete() retry: ${(error as Error).message} ` +
             `(attempt ${attempt + 1}/${maxRetries}, delay=${delayMs}ms)`,
           );
           await delay(delayMs, options.signal);
@@ -104,7 +104,7 @@ export async function complete(
       if (attempt < maxRetries && isRetryableRequestError(error)) {
         const delayMs = retryBaseDelay * (attempt + 1);
         console.warn(
-          `[PilotDeck] complete() retry: ${(error as Error).message} ` +
+          `[NukemAI] complete() retry: ${(error as Error).message} ` +
           `(attempt ${attempt + 1}/${maxRetries}, delay=${delayMs}ms)`,
         );
         await delay(delayMs, options.signal);
@@ -165,11 +165,11 @@ export async function* streamModel(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     throwIfAborted(options.signal);
     const body = buildModelRequest(currentRequest, config);
-    if (process.env.PILOTDECK_DUMP_REQUEST === "1") {
+    if (process.env.NUKEMAI_DUMP_REQUEST === "1") {
       const fs = await import("node:fs");
       const os = await import("node:os");
       const path = await import("node:path");
-      const dumpPath = path.join(os.tmpdir(), `pilotdeck_request_${Date.now()}.json`);
+      const dumpPath = path.join(os.tmpdir(), `nukemai_request_${Date.now()}.json`);
       fs.writeFileSync(dumpPath, JSON.stringify(body, null, 2));
       console.log(`[model-debug] Request dumped to ${dumpPath} (model=${currentRequest.model})`);
     }
@@ -307,11 +307,11 @@ async function* streamGoogleProviderRequest(params: {
       const body = withGoogleAbortSignal(buildModelRequest(currentRequest, {
         providers: { [params.provider.id]: params.provider },
       }) as Record<string, unknown>, params.options.signal);
-      if (process.env.PILOTDECK_DUMP_REQUEST === "1") {
+      if (process.env.NUKEMAI_DUMP_REQUEST === "1") {
         const fs = await import("node:fs");
         const os = await import("node:os");
         const path = await import("node:path");
-        const dumpPath = path.join(os.tmpdir(), `pilotdeck_request_${Date.now()}.json`);
+        const dumpPath = path.join(os.tmpdir(), `nukemai_request_${Date.now()}.json`);
         fs.writeFileSync(dumpPath, JSON.stringify(body, null, 2));
         console.log(`[model-debug] Request dumped to ${dumpPath} (model=${currentRequest.model})`);
       }

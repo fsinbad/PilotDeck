@@ -100,8 +100,8 @@ async function generateSnapshotCopyDiff(
     "--exclude=.git",
     "--exclude=node_modules",
     "--exclude=dist",
-    "--exclude=.pilotdeck",
-    "--exclude=.pilotdeck-always-on",
+    "--exclude=.nukemai",
+    "--exclude=.nukemai-always-on",
     projectRoot,
     workspaceCwd,
   ]);

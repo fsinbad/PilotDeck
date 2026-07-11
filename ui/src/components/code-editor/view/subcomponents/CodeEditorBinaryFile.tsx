@@ -298,13 +298,13 @@ function useOfficeAutoRefresh(
       }
     };
 
-    window.addEventListener('pilotdeck:file-updated', handleRefreshEvent);
-    window.addEventListener('pilotdeck:files-changed', handleRefreshEvent);
-    window.addEventListener('pilotdeck:agent-turn-complete', handleRefreshEvent);
+    window.addEventListener('nukemai:file-updated', handleRefreshEvent);
+    window.addEventListener('nukemai:files-changed', handleRefreshEvent);
+    window.addEventListener('nukemai:agent-turn-complete', handleRefreshEvent);
     return () => {
-      window.removeEventListener('pilotdeck:file-updated', handleRefreshEvent);
-      window.removeEventListener('pilotdeck:files-changed', handleRefreshEvent);
-      window.removeEventListener('pilotdeck:agent-turn-complete', handleRefreshEvent);
+      window.removeEventListener('nukemai:file-updated', handleRefreshEvent);
+      window.removeEventListener('nukemai:files-changed', handleRefreshEvent);
+      window.removeEventListener('nukemai:agent-turn-complete', handleRefreshEvent);
     };
   }, [filePath, projectName, reload]);
 }
@@ -627,7 +627,7 @@ export default function CodeEditorBinaryFile({
         {isOffice && (
           <RefreshButton
             onRefresh={() => {
-              window.dispatchEvent(new CustomEvent('pilotdeck:file-updated', {
+              window.dispatchEvent(new CustomEvent('nukemai:file-updated', {
                 detail: { projectName, filePath: file.path, force: true },
               }));
             }}

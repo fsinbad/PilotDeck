@@ -6,7 +6,7 @@ import os from 'os';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { promisify } from 'util';
-import { readPilotDeckConfigFile } from './pilotdeckConfig.js';
+import { readNukemAIConfigFile } from './nukemaiConfig.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -14,14 +14,14 @@ const officePreviewConversionLocks = new Map();
 
 export const OFFICE_PREVIEW_SERVICE_NONE = 'none';
 export const OFFICE_PREVIEW_SERVICE_LIBREOFFICE = 'libreoffice';
-export const OFFICE_PREVIEW_CACHE_DIR = path.join(os.tmpdir(), 'pilotdeck-office-preview-cache');
-export const LIBREOFFICE_TIMEOUT_MS = Number(process.env.PILOTDECK_LIBREOFFICE_TIMEOUT_MS || 120000);
+export const OFFICE_PREVIEW_CACHE_DIR = path.join(os.tmpdir(), 'nukemai-office-preview-cache');
+export const LIBREOFFICE_TIMEOUT_MS = Number(process.env.NUKEMAI_LIBREOFFICE_TIMEOUT_MS || 120000);
 const OFFICE_PREVIEW_LOCK_STALE_MS = LIBREOFFICE_TIMEOUT_MS + 30000;
 const OFFICE_PREVIEW_LOCK_RETRY_MS = 100;
 
 export function getConfiguredOfficePreviewService() {
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNukemAIConfigFile();
     const configured = String(record?.config?.webui?.officePreview?.service || '').trim().toLowerCase();
     return configured === OFFICE_PREVIEW_SERVICE_NONE
       ? OFFICE_PREVIEW_SERVICE_NONE
@@ -34,7 +34,7 @@ export function getConfiguredOfficePreviewService() {
 
 function getConfiguredLibreOfficeBinaryPath() {
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNukemAIConfigFile();
     return String(record?.config?.webui?.officePreview?.binaryPath || '').trim();
   } catch (error) {
     console.warn('Failed to read LibreOffice binary path config; falling back to auto-detect:', error.message);

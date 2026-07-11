@@ -38,10 +38,10 @@ export interface ToolResult {
   content?: unknown;
   isError?: boolean;
   /**
-   * `PilotDeckToolErrorCode` from the backend (e.g. `permission_denied`,
+   * `NukemAIToolErrorCode` from the backend (e.g. `permission_denied`,
    * `permission_required`, `tool_execution_failed`, `file_not_found`).
    * Optional because legacy / replayed messages may not carry it. Used by
-   * `getPilotDeckPermissionSuggestion` to gate the "Add to Allowed Tools"
+   * `getNukemAIPermissionSuggestion` to gate the "Add to Allowed Tools"
    * affordance so it only fires for genuine permission failures.
    */
   errorCode?: string;
@@ -153,7 +153,7 @@ export interface RetryProgress {
   model?: string;
 }
 
-export interface PilotDeckWorkStatus {
+export interface NukemAIWorkStatus {
   text: string;
   tokens: number;
   can_interrupt: boolean;
@@ -161,7 +161,7 @@ export interface PilotDeckWorkStatus {
   retryProgress?: RetryProgress | null;
 }
 
-export interface PilotDeckSettings {
+export interface NukemAISettings {
   allowedTools: string[];
   disallowedTools: string[];
   skipPermissions: boolean;
@@ -170,7 +170,7 @@ export interface PilotDeckSettings {
   [key: string]: unknown;
 }
 
-export interface PilotDeckPermissionSuggestion {
+export interface NukemAIPermissionSuggestion {
   toolName: string;
   entry: string;
   isAllowed: boolean;
@@ -179,7 +179,7 @@ export interface PilotDeckPermissionSuggestion {
 export interface PermissionGrantResult {
   success: boolean;
   alreadyAllowed?: boolean;
-  updatedSettings?: PilotDeckSettings;
+  updatedSettings?: NukemAISettings;
   completion?: Promise<PermissionGrantResult>;
 }
 

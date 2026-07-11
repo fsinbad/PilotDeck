@@ -1,8 +1,8 @@
 import { isAbsolute, relative, resolve } from "node:path";
 import { PermissionRuntime } from "../../permission/index.js";
-import type { LifecycleRuntime, PilotDeckHookEffect } from "../../lifecycle/index.js";
+import type { LifecycleRuntime, NukemAIHookEffect } from "../../lifecycle/index.js";
 import { toolError } from "../protocol/errors.js";
-import type { PilotDeckToolErrorCode } from "../protocol/errors.js";
+import type { NukemAIToolErrorCode } from "../protocol/errors.js";
 import {
   PLAN_MODE_ALLOWED_TOOLS,
   buildPlanModeBashViolationMessage,
@@ -12,11 +12,11 @@ import { getAskModeViolation } from "../askModeConstraints.js";
 import { isReadOnlyShellCommand } from "../builtin/bash/permissions.js";
 import {
   applyResultSizeLimit,
-  type PilotDeckToolErrorResult,
-  type PilotDeckToolResult,
-  type PilotDeckToolSuccessResult,
+  type NukemAIToolErrorResult,
+  type NukemAIToolResult,
+  type NukemAIToolSuccessResult,
 } from "../protocol/result.js";
-import type { PilotDeckToolCall, PilotDeckToolRuntimeContext } from "../protocol/types.js";
+import type { NukemAIToolCall, NukemAIToolRuntimeContext } from "../protocol/types.js";
 import type { ToolRegistry } from "../registry/ToolRegistry.js";
 import { validateToolInput } from "./validateToolInput.js";
 import { formatValidationError } from "./formatValidationError.js";
@@ -34,9 +34,9 @@ export class ToolRuntime {
     private readonly eventEmitter?: AgentEventEmitter,
   ) {}
 
-  async execute(call: PilotDeckToolCall, context: PilotDeckToolRuntimeContext): Promise<PilotDeckToolResult> {
+  async execute(call: NukemAIToolCall, context: NukemAIToolRuntimeContext): Promise<NukemAIToolResult> {
     const startedAtDate = now(context);
-    const runtimeContext: PilotDeckToolRuntimeContext = context.executeTool
+    const runtimeContext: NukemAIToolRuntimeContext = context.executeTool
       ? context
       : {
           ...context,
@@ -231,7 +231,7 @@ export class ToolRuntime {
         reason: decision.message,
       });
       this.eventEmitter?.({ type: "permission_denied", sessionId: context.sessionId, turnId: context.turnId, toolName: tool.name, reason: decision.message });
-      const code: PilotDeckToolErrorCode =
+      const code: NukemAIToolErrorCode =
         decision.reason.type === "runtime" && decision.reason.message.includes("prompt") ?
           "permission_required" :
           "permission_denied";
@@ -255,12 +255,12 @@ export class ToolRuntime {
     }
 
     executeInput = decision.updatedInput ?? executeInput;
-    const baseContext: PilotDeckToolRuntimeContext = {
+    const baseContext: NukemAIToolRuntimeContext = {
       ...context,
       currentToolCallId: call.id,
       currentPermissionDecision: decision,
     };
-    const executeContext: PilotDeckToolRuntimeContext = baseContext.progress
+    const executeContext: NukemAIToolRuntimeContext = baseContext.progress
       ? {
           ...baseContext,
           progress: (event) =>
@@ -285,7 +285,7 @@ export class ToolRuntime {
         { toolResponse: output.data ?? output.content },
       );
       this.eventEmitter?.({ type: "post_tool_execute", sessionId: context.sessionId, turnId: context.turnId, toolCallId: call.id, toolName: tool.name, success: true });
-      const result: PilotDeckToolSuccessResult = {
+      const result: NukemAIToolSuccessResult = {
         type: "success",
         toolCallId: call.id,
         toolName: tool.name,
@@ -323,12 +323,12 @@ export class ToolRuntime {
   private async errorResult(
     toolCallId: string,
     toolName: string,
-    code: PilotDeckToolErrorCode,
+    code: NukemAIToolErrorCode,
     message: string,
     startedAt: string,
-    context: PilotDeckToolRuntimeContext,
+    context: NukemAIToolRuntimeContext,
     details?: Record<string, unknown>,
-  ): Promise<PilotDeckToolErrorResult> {
+  ): Promise<NukemAIToolErrorResult> {
     const startedAtDate = new Date(startedAt);
     const result = this.createErrorResult(toolCallId, toolName, code, message, startedAt, context, details);
     await this.recordToolAudit(result, context, startedAtDate);
@@ -338,12 +338,12 @@ export class ToolRuntime {
   private createErrorResult(
     toolCallId: string,
     toolName: string,
-    code: PilotDeckToolErrorCode,
+    code: NukemAIToolErrorCode,
     message: string,
     startedAt: string,
-    context: PilotDeckToolRuntimeContext,
+    context: NukemAIToolRuntimeContext,
     details?: Record<string, unknown>,
-  ): PilotDeckToolErrorResult {
+  ): NukemAIToolErrorResult {
     const completedAt = now(context).toISOString();
     const recovery = buildToolErrorRecovery({
       code,
@@ -368,8 +368,8 @@ export class ToolRuntime {
   }
 
   private async recordToolAudit(
-    result: PilotDeckToolResult,
-    context: PilotDeckToolRuntimeContext,
+    result: NukemAIToolResult,
+    context: NukemAIToolRuntimeContext,
     startedAt: Date,
   ): Promise<void> {
     await context.auditRecorder?.recordTool({
@@ -391,7 +391,7 @@ export class ToolRuntime {
     toolName: string,
     toolCallId: string,
     toolInput: unknown,
-    context: PilotDeckToolRuntimeContext,
+    context: NukemAIToolRuntimeContext,
     extraPayload: Record<string, unknown> = {},
   ) {
     return this.lifecycle?.dispatch({
@@ -469,7 +469,7 @@ function readStringDetail(details: Record<string, unknown>, key: string): string
 function getPlanModeViolation(
   toolName: string,
   input: unknown,
-  context: PilotDeckToolRuntimeContext,
+  context: NukemAIToolRuntimeContext,
 ): string | undefined {
   if (context.permissionMode !== "plan") {
     return undefined;
@@ -509,7 +509,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isPlanMarkdownPath(filePath: string | undefined, context: PilotDeckToolRuntimeContext): boolean {
+function isPlanMarkdownPath(filePath: string | undefined, context: NukemAIToolRuntimeContext): boolean {
   if (!filePath || !context.planDirectory?.path) {
     return false;
   }
@@ -526,14 +526,14 @@ function isPlanMarkdownPath(filePath: string | undefined, context: PilotDeckTool
   );
 }
 
-function findEffect<Type extends PilotDeckHookEffect["type"]>(
-  effects: PilotDeckHookEffect[],
+function findEffect<Type extends NukemAIHookEffect["type"]>(
+  effects: NukemAIHookEffect[],
   type: Type,
-): Extract<PilotDeckHookEffect, { type: Type }> | undefined {
-  return effects.find((effect): effect is Extract<PilotDeckHookEffect, { type: Type }> => effect.type === type);
+): Extract<NukemAIHookEffect, { type: Type }> | undefined {
+  return effects.find((effect): effect is Extract<NukemAIHookEffect, { type: Type }> => effect.type === type);
 }
 
-function lifecycleMetadata(result: { effects: PilotDeckHookEffect[] }): Record<string, unknown> | undefined {
+function lifecycleMetadata(result: { effects: NukemAIHookEffect[] }): Record<string, unknown> | undefined {
   const blocking = result.effects.find((effect) => effect.type === "block");
   const additionalContext = result.effects.filter((effect) => effect.type === "additional_context");
   const updatedMcpOutput = result.effects.find((effect) => effect.type === "updated_mcp_tool_output");
@@ -549,7 +549,7 @@ function lifecycleMetadata(result: { effects: PilotDeckHookEffect[] }): Record<s
   };
 }
 
-function now(context: PilotDeckToolRuntimeContext): Date {
+function now(context: NukemAIToolRuntimeContext): Date {
   return context.now?.() ?? new Date();
 }
 

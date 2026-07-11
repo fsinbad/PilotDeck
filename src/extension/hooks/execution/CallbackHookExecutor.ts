@@ -1,13 +1,13 @@
-import type { PilotDeckHookInput } from "../protocol/input.js";
-import type { PilotDeckHookCommand } from "../protocol/settings.js";
-import type { PilotDeckHookOutput } from "../protocol/output.js";
+import type { NukemAIHookInput } from "../protocol/input.js";
+import type { NukemAIHookCommand } from "../protocol/settings.js";
+import type { NukemAIHookOutput } from "../protocol/output.js";
 import { parseHookOutput } from "./parseHookOutput.js";
 import type { CommandHookExecutionResult } from "./CommandHookExecutor.js";
 
 export type CallbackHookHandler = (input: {
-  hookInput: PilotDeckHookInput;
+  hookInput: NukemAIHookInput;
   signal?: AbortSignal;
-}) => Promise<PilotDeckHookOutput | string | void> | PilotDeckHookOutput | string | void;
+}) => Promise<NukemAIHookOutput | string | void> | NukemAIHookOutput | string | void;
 
 export class CallbackHookExecutor {
   private readonly callbacks = new Map<string, CallbackHookHandler>();
@@ -21,8 +21,8 @@ export class CallbackHookExecutor {
   }
 
   async execute(options: {
-    hook: Extract<PilotDeckHookCommand, { type: "callback" }>;
-    hookInput: PilotDeckHookInput;
+    hook: Extract<NukemAIHookCommand, { type: "callback" }>;
+    hookInput: NukemAIHookInput;
     signal?: AbortSignal;
   }): Promise<CommandHookExecutionResult> {
     const callback = this.callbacks.get(options.hook.name);

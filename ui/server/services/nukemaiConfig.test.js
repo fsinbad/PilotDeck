@@ -2,33 +2,33 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { readPilotDeckConfigFile, sanitizeProviderCredentials, validatePilotDeckConfig } from './pilotdeckConfig.js';
+import { readNukemAIConfigFile, sanitizeProviderCredentials, validateNukemAIConfig } from './nukemaiConfig.js';
 
 const tempDirs = [];
 
 afterEach(() => {
-    delete process.env.PILOTDECK_CONFIG_PATH;
+    delete process.env.NUKEMAI_CONFIG_PATH;
     for (const dir of tempDirs.splice(0)) {
         rmSync(dir, { recursive: true, force: true });
     }
 });
 
-function useTempConfig(contents, filename = 'pilotdeck.yaml') {
-    const dir = mkdtempSync(join(tmpdir(), 'pilotdeck-config-test-'));
+function useTempConfig(contents, filename = 'nukemai.yaml') {
+    const dir = mkdtempSync(join(tmpdir(), 'nukemai-config-test-'));
     tempDirs.push(dir);
     const configPath = join(dir, filename);
     if (contents !== null) {
         writeFileSync(configPath, contents, 'utf8');
     }
-    process.env.PILOTDECK_CONFIG_PATH = configPath;
+    process.env.NUKEMAI_CONFIG_PATH = configPath;
     return configPath;
 }
 
-describe('readPilotDeckConfigFile fallback behavior', () => {
+describe('readNukemAIConfigFile fallback behavior', () => {
     it('returns defaults when the config file is missing', () => {
         const configPath = useTempConfig(null);
 
-        const record = readPilotDeckConfigFile();
+        const record = readNukemAIConfigFile();
 
         expect(record.exists).toBe(false);
         expect(record.configPath).toBe(configPath);
@@ -41,7 +41,7 @@ describe('readPilotDeckConfigFile fallback behavior', () => {
     it('reads and normalizes valid YAML', () => {
         useTempConfig('schemaVersion: 1\nmodel:\n  providers: {}\n');
 
-        const record = readPilotDeckConfigFile();
+        const record = readNukemAIConfigFile();
 
         expect(record.exists).toBe(true);
         expect(record.parseError).toBeNull();
@@ -54,7 +54,7 @@ describe('readPilotDeckConfigFile fallback behavior', () => {
         const raw = 'schemaVersion: 1\nmodel:\n  providers: [\n';
         useTempConfig(raw);
 
-        const record = readPilotDeckConfigFile();
+        const record = readNukemAIConfigFile();
 
         expect(record.exists).toBe(true);
         expect(record.raw).toBe(raw);
@@ -65,16 +65,16 @@ describe('readPilotDeckConfigFile fallback behavior', () => {
     });
 });
 
-describe('validatePilotDeckConfig gateway validation', () => {
+describe('validateNukemAIConfig gateway validation', () => {
     it('rejects non-object gateway config', () => {
-        const validation = validatePilotDeckConfig({ gateway: true });
+        const validation = validateNukemAIConfig({ gateway: true });
 
         expect(validation.valid).toBe(false);
         expect(validation.errors).toContain('gateway: gateway config must be an object.');
     });
 
     it('rejects unsupported gateway bindAddress', () => {
-        const validation = validatePilotDeckConfig({
+        const validation = validateNukemAIConfig({
             gateway: {
                 bindAddress: '0.0.0.0',
             },
@@ -85,7 +85,7 @@ describe('validatePilotDeckConfig gateway validation', () => {
     });
 
     it('warns when gateway.tokenPath is configured', () => {
-        const validation = validatePilotDeckConfig({
+        const validation = validateNukemAIConfig({
             gateway: {
                 tokenPath: '/tmp/token',
             },
@@ -98,7 +98,7 @@ describe('validatePilotDeckConfig gateway validation', () => {
     });
 
     it('accepts valid gateway config', () => {
-        const validation = validatePilotDeckConfig({
+        const validation = validateNukemAIConfig({
             gateway: {
                 bindAddress: '127.0.0.1',
             },
@@ -109,7 +109,7 @@ describe('validatePilotDeckConfig gateway validation', () => {
     });
 
     it('accepts Ollama providers without an apiKey', () => {
-        const validation = validatePilotDeckConfig({
+        const validation = validateNukemAIConfig({
             agent: { model: 'ollama/qwen3:0.6b' },
             model: {
                 providers: {

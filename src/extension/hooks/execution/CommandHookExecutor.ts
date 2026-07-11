@@ -1,15 +1,15 @@
 import { spawn } from "node:child_process";
-import type { PilotDeckHookInput } from "../protocol/input.js";
-import type { PilotDeckHookCommand } from "../protocol/settings.js";
+import type { NukemAIHookInput } from "../protocol/input.js";
+import type { NukemAIHookCommand } from "../protocol/settings.js";
 import { parseHookOutput } from "./parseHookOutput.js";
-import type { PilotDeckHookOutput } from "../protocol/output.js";
+import type { NukemAIHookOutput } from "../protocol/output.js";
 
-export const PILOTDECK_HOOK_TIMEOUT_MS = 10 * 60 * 1000;
-export const PILOTDECK_SESSION_END_HOOK_TIMEOUT_MS = 1500;
+export const NUKEMAI_HOOK_TIMEOUT_MS = 10 * 60 * 1000;
+export const NUKEMAI_SESSION_END_HOOK_TIMEOUT_MS = 1500;
 
 export type CommandHookExecutionOptions = {
-  hook: Extract<PilotDeckHookCommand, { type: "command" }>;
-  hookInput: PilotDeckHookInput;
+  hook: Extract<NukemAIHookCommand, { type: "command" }>;
+  hookInput: NukemAIHookInput;
   cwd: string;
   env?: NodeJS.ProcessEnv;
   signal?: AbortSignal;
@@ -21,12 +21,12 @@ export type CommandHookExecutionResult = {
   stderr: string;
   exitCode?: number;
   outcome: "success" | "blocking" | "non_blocking_error" | "cancelled" | "timeout";
-  output: PilotDeckHookOutput;
+  output: NukemAIHookOutput;
 };
 
 export class CommandHookExecutor {
   execute(options: CommandHookExecutionOptions): Promise<CommandHookExecutionResult> {
-    const timeoutMs = options.timeoutMs ?? PILOTDECK_HOOK_TIMEOUT_MS;
+    const timeoutMs = options.timeoutMs ?? NUKEMAI_HOOK_TIMEOUT_MS;
     const child = spawn(options.hook.command, {
       cwd: options.cwd,
       env: options.env,

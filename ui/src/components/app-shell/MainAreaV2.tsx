@@ -43,7 +43,7 @@ const TABS: Tab[] = [
 ];
 
 const ALWAYS_ON_EVENT_BADGE_POLL_INTERVAL_MS = 15_000;
-const ALWAYS_ON_LAST_VIEWED_MARKER_KEY = 'pilotdeck:always-on-last-viewed-marker';
+const ALWAYS_ON_LAST_VIEWED_MARKER_KEY = 'nukemai:always-on-last-viewed-marker';
 const ALWAYS_ON_EVENT_BADGE_LIMIT = 200;
 
 const BADGE_EVENT_PHASES = new Set<AlwaysOnDashboardEvent['phase']>([
@@ -165,7 +165,7 @@ export default function MainAreaV2(props: MainAreaV2Props) {
       {/* Header: session title left, tool switcher right. */}
       <header className="flex h-14 shrink-0 items-center px-6">
         {isSidebarCollapsed ? (
-          // Just the "expand sidebar" affordance — the PilotDeck logo lives
+          // Just the "expand sidebar" affordance — the NukemAI logo lives
           // in the sidebar header, so showing a duplicate badge here when
           // the sidebar is collapsed feels redundant.
           <button

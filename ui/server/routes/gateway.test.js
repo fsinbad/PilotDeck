@@ -13,14 +13,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   delete process.env.PILOT_HOME;
-  delete process.env.PILOTDECK_CONFIG_PATH;
+  delete process.env.NUKEMAI_CONFIG_PATH;
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
 describe('gateway WeCom routes', () => {
-  it('returns WeCom status from pilotdeck.yaml', async () => {
+  it('returns WeCom status from nukemai.yaml', async () => {
     const { request } = await createGatewayApp({
       adapters: {
         wecom: {
@@ -52,7 +52,7 @@ describe('gateway WeCom routes', () => {
     });
   });
 
-  it('saves manual WeCom config to pilotdeck.yaml', async () => {
+  it('saves manual WeCom config to nukemai.yaml', async () => {
     const { request, configPath } = await createGatewayApp({});
 
     const result = await request('/api/gateway/wecom/save', {
@@ -186,25 +186,25 @@ describe('gateway WeCom routes', () => {
 });
 
 async function createGatewayApp(initialConfig) {
-  const pilotHome = mkdtempSync(join(tmpdir(), 'pilotdeck-wecom-gateway-'));
+  const pilotHome = mkdtempSync(join(tmpdir(), 'nukemai-wecom-gateway-'));
   tempDirs.push(pilotHome);
-  const configPath = join(pilotHome, 'pilotdeck.yaml');
+  const configPath = join(pilotHome, 'nukemai.yaml');
   writeFileSync(configPath, stringifyYaml(initialConfig), 'utf-8');
 
   process.env.PILOT_HOME = pilotHome;
-  process.env.PILOTDECK_CONFIG_PATH = configPath;
+  process.env.NUKEMAI_CONFIG_PATH = configPath;
   vi.resetModules();
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({
+  vi.doMock('../services/nukemaiConfigWatcher.js', () => ({
     suppressNextWatchEvent: vi.fn(),
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({
-    reloadPilotDeckConfig: vi.fn(async () => undefined),
+  vi.doMock('../services/nukemaiConfigReloader.js', () => ({
+    reloadNukemAIConfig: vi.fn(async () => undefined),
   }));
-  vi.doMock('../services/pilotdeckConfig.js', () => ({
-    readPilotDeckConfigFile: vi.fn(() => ({ config: {} })),
+  vi.doMock('../services/nukemaiConfig.js', () => ({
+    readNukemAIConfigFile: vi.fn(() => ({ config: {} })),
   }));
-  vi.doMock('../pilotdeck-bridge.js', () => ({
-    getPilotDeckGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
+  vi.doMock('../nukemai-bridge.js', () => ({
+    getNukemAIGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
   }));
 
   const { default: gatewayRoutes } = await import('./gateway.js');

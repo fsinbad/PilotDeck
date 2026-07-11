@@ -1,11 +1,11 @@
-import type { PilotDeckHooksSettings } from "../../hooks/protocol/settings.js";
-import type { PilotDeckLoadedPlugin } from "../protocol/plugin.js";
+import type { NukemAIHooksSettings } from "../../hooks/protocol/settings.js";
+import type { NukemAILoadedPlugin } from "../protocol/plugin.js";
 
-export function loadPluginHooks(plugins: PilotDeckLoadedPlugin[]): PilotDeckHooksSettings {
-  const settings: PilotDeckHooksSettings = {};
+export function loadPluginHooks(plugins: NukemAILoadedPlugin[]): NukemAIHooksSettings {
+  const settings: NukemAIHooksSettings = {};
   for (const plugin of plugins) {
     for (const [event, matchers] of Object.entries(plugin.hooksConfig ?? {}) as Array<
-      [keyof PilotDeckHooksSettings, NonNullable<PilotDeckHooksSettings[keyof PilotDeckHooksSettings]>]
+      [keyof NukemAIHooksSettings, NonNullable<NukemAIHooksSettings[keyof NukemAIHooksSettings]>]
     >) {
       settings[event] = [
         ...(settings[event] ?? []),

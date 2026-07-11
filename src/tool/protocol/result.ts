@@ -2,36 +2,36 @@ import type {
   CanonicalToolResultBlock,
   CanonicalToolResultContentBlock,
 } from "../../model/index.js";
-import type { PilotDeckToolError } from "./errors.js";
-import type { PilotDeckToolResultContent, PilotDeckToolSupplementalMessage } from "./types.js";
+import type { NukemAIToolError } from "./errors.js";
+import type { NukemAIToolResultContent, NukemAIToolSupplementalMessage } from "./types.js";
 
-export type PilotDeckToolSuccessResult = {
+export type NukemAIToolSuccessResult = {
   type: "success";
   toolCallId: string;
   toolName: string;
-  content: PilotDeckToolResultContent[];
-  supplementalMessages?: PilotDeckToolSupplementalMessage[];
+  content: NukemAIToolResultContent[];
+  supplementalMessages?: NukemAIToolSupplementalMessage[];
   data?: unknown;
   metadata?: Record<string, unknown>;
   startedAt: string;
   completedAt: string;
 };
 
-export type PilotDeckToolErrorResult = {
+export type NukemAIToolErrorResult = {
   type: "error";
   toolCallId: string;
   toolName: string;
-  error: PilotDeckToolError;
-  content: PilotDeckToolResultContent[];
-  supplementalMessages?: PilotDeckToolSupplementalMessage[];
+  error: NukemAIToolError;
+  content: NukemAIToolResultContent[];
+  supplementalMessages?: NukemAIToolSupplementalMessage[];
   metadata?: Record<string, unknown>;
   startedAt: string;
   completedAt: string;
 };
 
-export type PilotDeckToolResult = PilotDeckToolSuccessResult | PilotDeckToolErrorResult;
+export type NukemAIToolResult = NukemAIToolSuccessResult | NukemAIToolErrorResult;
 
-export type PilotDeckToolResultSizeMetadata = {
+export type NukemAIToolResultSizeMetadata = {
   truncated?: boolean;
   originalBytes?: number;
   returnedBytes?: number;
@@ -40,7 +40,7 @@ export type PilotDeckToolResultSizeMetadata = {
 
 const EMPTY_TOOL_OUTPUT = "Tool completed with no output.";
 
-export function contentToText(content: PilotDeckToolResultContent): string {
+export function contentToText(content: NukemAIToolResultContent): string {
   switch (content.type) {
     case "text":
       return content.text;
@@ -57,7 +57,7 @@ export function contentToText(content: PilotDeckToolResultContent): string {
   }
 }
 
-export function toCanonicalToolResultBlock(result: PilotDeckToolResult): CanonicalToolResultBlock {
+export function toCanonicalToolResultBlock(result: NukemAIToolResult): CanonicalToolResultBlock {
   const contentBlocks = result.content.map(toCanonicalToolResultContentBlock);
 
   return {
@@ -69,7 +69,7 @@ export function toCanonicalToolResultBlock(result: PilotDeckToolResult): Canonic
   };
 }
 
-function sanitizeToolResultRaw(result: PilotDeckToolResult): unknown {
+function sanitizeToolResultRaw(result: NukemAIToolResult): unknown {
   return {
     ...result,
     content: result.content.map(sanitizeRawContent),
@@ -84,7 +84,7 @@ function sanitizeToolResultRaw(result: PilotDeckToolResult): unknown {
   };
 }
 
-function sanitizeRawContent(content: PilotDeckToolResultContent): unknown {
+function sanitizeRawContent(content: NukemAIToolResultContent): unknown {
   const kind = (content as { type?: unknown }).type;
   if (kind === "image" || kind === "pdf" || kind === "audio") {
     const { data: _omitted, ...rest } = content as Record<string, unknown>;
@@ -95,7 +95,7 @@ function sanitizeRawContent(content: PilotDeckToolResultContent): unknown {
 }
 
 function toCanonicalToolResultContentBlock(
-  content: PilotDeckToolResultContent,
+  content: NukemAIToolResultContent,
 ): CanonicalToolResultContentBlock {
   if (content.type === "image") {
     return {
@@ -125,7 +125,7 @@ function toCanonicalToolResultContentBlock(
   };
 }
 
-export function estimateResultContentBytes(content: PilotDeckToolResultContent[]): number {
+export function estimateResultContentBytes(content: NukemAIToolResultContent[]): number {
   return content.reduce((total, item) => {
     switch (item.type) {
       case "image":
@@ -138,9 +138,9 @@ export function estimateResultContentBytes(content: PilotDeckToolResultContent[]
 }
 
 export function applyResultSizeLimit(
-  content: PilotDeckToolResultContent[],
+  content: NukemAIToolResultContent[],
   maxBytes: number | undefined,
-): { content: PilotDeckToolResultContent[]; metadata?: PilotDeckToolResultSizeMetadata } {
+): { content: NukemAIToolResultContent[]; metadata?: NukemAIToolResultSizeMetadata } {
   if (maxBytes === undefined || maxBytes < 0) {
     return { content };
   }

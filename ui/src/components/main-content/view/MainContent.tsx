@@ -198,7 +198,7 @@ function MainContent({
     getProjectSessions(project).find((session) => session.id === sessionId)
   ), [getProjectSessions]);
 
-  const loadPilotDeckSession = useCallback(async (projectName: string, sessionId: string) => {
+  const loadNukemAISession = useCallback(async (projectName: string, sessionId: string) => {
     const response = await api.sessions(projectName, Number.MAX_SAFE_INTEGER, 0);
     if (!response.ok) {
       return null;
@@ -225,7 +225,7 @@ function MainContent({
 
       const existingSession =
         findSessionInProject(targetProject, target.sessionId) ??
-        await loadPilotDeckSession(lookupProjectName, target.sessionId);
+        await loadNukemAISession(lookupProjectName, target.sessionId);
 
       if (!existingSession) {
         flashToast({ kind: 'error', text: missingMessage });
@@ -249,7 +249,7 @@ function MainContent({
 
     const existingSession =
       findSessionInProject(selectedProject, target.sessionId) ??
-      await loadPilotDeckSession(selectedProject.name, target.sessionId);
+      await loadNukemAISession(selectedProject.name, target.sessionId);
 
     if (!existingSession) {
       flashToast({ kind: 'error', text: missingMessage });
@@ -283,7 +283,7 @@ function MainContent({
     findSessionInProject,
     flashToast,
     i18n,
-    loadPilotDeckSession,
+    loadNukemAISession,
     onNavigateToSession,
     onSelectSession,
     projects,

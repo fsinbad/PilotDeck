@@ -43,7 +43,7 @@ function requestWith(message: CanonicalMessage): CanonicalModelRequest {
 }
 
 test("large tool error references preserve error semantics for model replay", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-tool-result-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "nukemai-tool-result-test-"));
   try {
     const budget = new ToolResultBudget({ toolResultsDir: dir, maxResultSizeChars: 120, previewBytes: 80 });
     const applied = await budget.applyToMessage({
@@ -80,7 +80,7 @@ test("large tool error references preserve error semantics for model replay", as
 });
 
 test("multibyte truncated tool result references still advertise read_file access", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-tool-result-multibyte-"));
+  const dir = await mkdtemp(join(tmpdir(), "nukemai-tool-result-multibyte-"));
   try {
     const budget = new ToolResultBudget({ toolResultsDir: dir, maxResultSizeChars: 80, previewBytes: 40 });
     const applied = await budget.applyToMessage({

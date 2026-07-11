@@ -1,27 +1,27 @@
-export type PilotDeckToolInputSchema = {
+export type NukemAIToolInputSchema = {
   type: "object";
-  properties?: Record<string, PilotDeckJsonSchema>;
+  properties?: Record<string, NukemAIJsonSchema>;
   required?: string[];
   additionalProperties?: boolean;
   [key: string]: unknown;
 };
 
-export type PilotDeckJsonSchema = {
+export type NukemAIJsonSchema = {
   type?: string | string[];
-  properties?: Record<string, PilotDeckJsonSchema>;
+  properties?: Record<string, NukemAIJsonSchema>;
   required?: string[];
   additionalProperties?: boolean;
-  items?: PilotDeckJsonSchema;
+  items?: NukemAIJsonSchema;
   enum?: unknown[];
   [key: string]: unknown;
 };
 
-export type PilotDeckToolValidationIssue = {
+export type NukemAIToolValidationIssue = {
   path: string;
   code: "required" | "unknown_property" | "invalid_type" | "invalid_enum" | "invalid_schema";
   message: string;
 };
 
-export type PilotDeckToolValidationResult =
+export type NukemAIToolValidationResult =
   | { ok: true; input: unknown }
-  | { ok: false; issues: PilotDeckToolValidationIssue[] };
+  | { ok: false; issues: NukemAIToolValidationIssue[] };

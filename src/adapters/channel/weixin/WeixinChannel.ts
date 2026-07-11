@@ -27,7 +27,7 @@ import {
 import { WeixinSessionMapper, type WeixinSessionMapperState } from "./WeixinSessionMapper.js";
 import { createVisibleErrorStatusDetail } from "../../../status/agentStatus.js";
 
-const CREDENTIALS_PATH = join(homedir(), ".pilotdeck", "weixin-credentials.json");
+const CREDENTIALS_PATH = join(homedir(), ".nukemai", "weixin-credentials.json");
 const POLL_RETRY_DELAY_MS = 3000;
 const WEIXIN_ACTIVITY_DELAY_MS = 10 * 60 * 1000;
 const WEIXIN_ACTIVITY_UPDATE_THROTTLE_MS = 10 * 60 * 1000;
@@ -138,7 +138,7 @@ export class WeixinChannel implements ChannelAdapter {
     this.login = options.loginWithQR ?? loginWithQR;
     this.onStateChange = options.onStateChange;
     this.attachmentStore = new ImAttachmentStore({
-      rootDir: join(homedir(), ".pilotdeck", "im-attachments"),
+      rootDir: join(homedir(), ".nukemai", "im-attachments"),
       channelKey: this.channelKey,
       maxBytes: WEIXIN_MAX_ATTACHMENT_BYTES,
     });
@@ -680,7 +680,7 @@ export class WeixinChannel implements ChannelAdapter {
         detail: createVisibleErrorStatusDetail({
           message: "Failed to process this message. Please retry.",
           code: "channel_submit_failed",
-          userHint: "PilotDeck failed before this IM turn could finish. Retry the message; if it repeats, check the channel and gateway logs.",
+          userHint: "NukemAI failed before this IM turn could finish. Retry the message; if it repeats, check the channel and gateway logs.",
           scope: "channel",
           source: "im_channel",
           detail: {
@@ -911,7 +911,7 @@ export class WeixinChannel implements ChannelAdapter {
 
   private saveCredentials(creds: SavedCredentials): void {
     try {
-      const dir = join(homedir(), ".pilotdeck");
+      const dir = join(homedir(), ".nukemai");
       mkdirSync(dir, { recursive: true });
       writeFileSync(this.credentialsPath, JSON.stringify(creds, null, 2), "utf-8");
     } catch (e) {

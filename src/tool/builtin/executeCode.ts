@@ -5,9 +5,9 @@ import path from "node:path";
 import { spawn, type ChildProcessByStdio } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import type { Readable } from "node:stream";
-import type { PilotDeckToolDefinition, PilotDeckToolRuntimeContext } from "../protocol/types.js";
-import { contentToText, type PilotDeckToolResult } from "../protocol/result.js";
-import type { PilotDeckToolValidationIssue } from "../protocol/schema.js";
+import type { NukemAIToolDefinition, NukemAIToolRuntimeContext } from "../protocol/types.js";
+import { contentToText, type NukemAIToolResult } from "../protocol/result.js";
+import type { NukemAIToolValidationIssue } from "../protocol/schema.js";
 import { isReadOnlyShellCommand } from "./bash/permissions.js";
 import { collectPythonSyntaxDiagnostics } from "./filesystem/syntaxDiagnostics.js";
 
@@ -65,7 +65,7 @@ export async function handleExecuteCodeRpcLineForTests(
   line: string,
   options: {
     expectedToken?: string;
-    executeTool?: NonNullable<PilotDeckToolRuntimeContext["executeTool"]>;
+    executeTool?: NonNullable<NukemAIToolRuntimeContext["executeTool"]>;
   } = {},
 ): Promise<RpcResponse> {
   return handleRpcLine(line, {
@@ -109,16 +109,16 @@ const EXECUTE_CODE_ALLOWED_TOOLS = new Set([
   "bash",
 ]);
 
-export function createExecuteCodeTool(): PilotDeckToolDefinition<ExecuteCodeInput, ExecuteCodeOutput> {
+export function createExecuteCodeTool(): NukemAIToolDefinition<ExecuteCodeInput, ExecuteCodeOutput> {
   return {
     name: "execute_code",
     description:
-      "Run a local Python 3 script that can call a small allow-list of PilotDeck tools via `import pilotdeck_tools`. " +
+      "Run a local Python 3 script that can call a small allow-list of NukemAI tools via `import nukemai_tools`. " +
       "The script runs from the workspace cwd and inherits the same runtime environment as normal tools such as bash, including configured API, proxy, PATH, virtualenv, and conda variables; do not print secrets or dump the full environment. " +
       "Only the script's final stdout/stderr summary is returned to the model; intermediate tool results stay inside the script. " +
       "Available helper functions: web_search, web_fetch, read_file, write_file, edit_file, grep, glob, bash. " +
       "Use normal Python control flow to orchestrate tools: loops for batch work, conditionals for branching, data structures for aggregation, and try/except around individual helper calls when one failure should not abort the whole script. Helper failures raise RuntimeError. You can chain helper results, e.g. grep -> read_file -> edit_file. Print only the concise final result needed by the agent. " +
-      "Before modifying an existing file, call read_file first so PilotDeck can verify freshness. Prefer edit_file for targeted changes and write_file for new files or complete rewrites. " +
+      "Before modifying an existing file, call read_file first so NukemAI can verify freshness. Prefer edit_file for targeted changes and write_file for new files or complete rewrites. " +
       "Notebook edits, agent, task tools, MCP tools, and execute_code itself are not available.",
     kind: "custom",
     inputSchema: {
@@ -128,7 +128,7 @@ export function createExecuteCodeTool(): PilotDeckToolDefinition<ExecuteCodeInpu
       properties: {
         code: {
           type: "string",
-          description: "Python 3 source code to execute. Use `from pilotdeck_tools import ...` to call allowed PilotDeck tools.",
+          description: "Python 3 source code to execute. Use `from nukemai_tools import ...` to call allowed NukemAI tools.",
         },
         description: {
           type: "string",
@@ -140,7 +140,7 @@ export function createExecuteCodeTool(): PilotDeckToolDefinition<ExecuteCodeInpu
         },
         max_tool_calls: {
           type: "integer",
-          description: "Maximum number of PilotDeck tool calls the script may make. Defaults to 50; maximum 50.",
+          description: "Maximum number of NukemAI tool calls the script may make. Defaults to 50; maximum 50.",
         },
       },
     },
@@ -178,7 +178,7 @@ export function createExecuteCodeTool(): PilotDeckToolDefinition<ExecuteCodeInpu
 }
 
 async function validateExecuteCodeInput(input: ExecuteCodeInput) {
-  const issues: PilotDeckToolValidationIssue[] = [];
+  const issues: NukemAIToolValidationIssue[] = [];
   if (!input.code.trim()) {
     issues.push({ path: "$.code", code: "invalid_schema", message: "$.code must not be empty." });
   }
@@ -310,14 +310,14 @@ function createRpcTransport(): RpcTransport {
     kind: "uds",
     socketPath: path.join(
       process.platform === "darwin" ? "/tmp" : tmpdir(),
-      `pilotdeck_rpc_${process.pid}_${Date.now()}_${Math.random().toString(16).slice(2)}.sock`,
+      `nukemai_rpc_${process.pid}_${Date.now()}_${Math.random().toString(16).slice(2)}.sock`,
     ),
   };
 }
 
 async function runExecuteCode(
   input: ExecuteCodeInput,
-  context: PilotDeckToolRuntimeContext,
+  context: NukemAIToolRuntimeContext,
   startedAt: number,
 ): Promise<ExecuteCodeOutput> {
   const timeoutSeconds = input.timeout_seconds ?? DEFAULT_TIMEOUT_SECONDS;
@@ -342,7 +342,7 @@ async function runExecuteCode(
     return buildOutput("unsupported", "", "execute_code requires python3 on PATH.", startedAt, toolCallsMade, toolCallLog);
   }
 
-  const tempRoot = await mkdtemp(path.join(tmpdir(), "pilotdeck_execute_code_"));
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "nukemai_execute_code_"));
   let transport = createRpcTransport();
   let server: Server | undefined;
   let child: ChildProcessByStdio<null, Readable, Readable> | undefined;
@@ -359,7 +359,7 @@ async function runExecuteCode(
   };
 
   try {
-    await writeFile(path.join(tempRoot, "pilotdeck_tools.py"), generatePilotDeckToolsModule(transport.kind), "utf8");
+    await writeFile(path.join(tempRoot, "nukemai_tools.py"), generateNukemAIToolsModule(transport.kind), "utf8");
     await writeFile(path.join(tempRoot, "script.py"), input.code, "utf8");
 
     server = createRpcServer({
@@ -426,8 +426,8 @@ async function runExecuteCode(
 }
 
 function createRpcServer(options: {
-  context: PilotDeckToolRuntimeContext;
-  executeTool: NonNullable<PilotDeckToolRuntimeContext["executeTool"]>;
+  context: NukemAIToolRuntimeContext;
+  executeTool: NonNullable<NukemAIToolRuntimeContext["executeTool"]>;
   maxToolCalls: number;
   toolCallLog: ExecuteCodeToolCallLogEntry[];
   nextToolCall: () => number;
@@ -458,8 +458,8 @@ async function processBufferedRequests(
   socket: Socket,
   takeLines: () => string[],
   options: {
-    context: PilotDeckToolRuntimeContext;
-    executeTool: NonNullable<PilotDeckToolRuntimeContext["executeTool"]>;
+    context: NukemAIToolRuntimeContext;
+    executeTool: NonNullable<NukemAIToolRuntimeContext["executeTool"]>;
     maxToolCalls: number;
     toolCallLog: ExecuteCodeToolCallLogEntry[];
     nextToolCall: () => number;
@@ -478,8 +478,8 @@ async function processBufferedRequests(
 async function handleRpcLine(
   line: string,
   options: {
-    context: PilotDeckToolRuntimeContext;
-    executeTool: NonNullable<PilotDeckToolRuntimeContext["executeTool"]>;
+    context: NukemAIToolRuntimeContext;
+    executeTool: NonNullable<NukemAIToolRuntimeContext["executeTool"]>;
     maxToolCalls: number;
     toolCallLog: ExecuteCodeToolCallLogEntry[];
     nextToolCall: () => number;
@@ -521,7 +521,7 @@ async function handleRpcLine(
   return toolResultToRpcResponse(result);
 }
 
-function toolResultToRpcResponse(result: PilotDeckToolResult): RpcResponse {
+function toolResultToRpcResponse(result: NukemAIToolResult): RpcResponse {
   const content = result.content.map(contentToText).join("\n");
   if (result.type === "error") {
     const details = formatToolErrorDetails(result);
@@ -539,7 +539,7 @@ function toolResultToRpcResponse(result: PilotDeckToolResult): RpcResponse {
   };
 }
 
-function formatToolErrorDetails(result: Extract<PilotDeckToolResult, { type: "error" }>): string | undefined {
+function formatToolErrorDetails(result: Extract<NukemAIToolResult, { type: "error" }>): string | undefined {
   const issues = result.error.details?.issues;
   if (!Array.isArray(issues)) return undefined;
   const messages = issues
@@ -548,7 +548,7 @@ function formatToolErrorDetails(result: Extract<PilotDeckToolResult, { type: "er
   return messages.length > 0 ? messages.join("\n") : undefined;
 }
 
-function generatePilotDeckToolsModule(kind: RpcTransport["kind"]): string {
+function generateNukemAIToolsModule(kind: RpcTransport["kind"]): string {
   const transportHeader = kind === "tcp" ? TCP_PYTHON_TRANSPORT_HEADER : UDS_PYTHON_TRANSPORT_HEADER;
   return `${transportHeader}
 
@@ -616,7 +616,7 @@ def bash(command, timeout_ms=None, workdir=None):
 `;
 }
 
-const UDS_PYTHON_TRANSPORT_HEADER = `"""Auto-generated PilotDeck execute_code RPC helpers."""
+const UDS_PYTHON_TRANSPORT_HEADER = `"""Auto-generated NukemAI execute_code RPC helpers."""
 import json
 import os
 import shlex
@@ -629,7 +629,7 @@ def _connect():
     global _sock
     if _sock is None:
         _sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        _sock.connect(os.environ["PILOTDECK_RPC_SOCKET"])
+        _sock.connect(os.environ["NUKEMAI_RPC_SOCKET"])
         _sock.settimeout(300)
     return _sock
 
@@ -641,7 +641,7 @@ def _call(tool_name, args):
     while True:
         chunk = conn.recv(65536)
         if not chunk:
-            raise RuntimeError("PilotDeck RPC server disconnected")
+            raise RuntimeError("NukemAI RPC server disconnected")
         chunks.append(chunk)
         if chunk.endswith(b"\\n"):
             break
@@ -651,21 +651,21 @@ def _call(tool_name, args):
     return response
 `;
 
-const TCP_PYTHON_TRANSPORT_HEADER = `"""Auto-generated PilotDeck execute_code RPC helpers."""
+const TCP_PYTHON_TRANSPORT_HEADER = `"""Auto-generated NukemAI execute_code RPC helpers."""
 import json
 import os
 import shlex
 import socket
 
 _sock = None
-_token = os.environ["PILOTDECK_RPC_TOKEN"]
+_token = os.environ["NUKEMAI_RPC_TOKEN"]
 
 
 def _connect():
     global _sock
     if _sock is None:
-        host = os.environ.get("PILOTDECK_RPC_HOST", "127.0.0.1")
-        port = int(os.environ["PILOTDECK_RPC_PORT"])
+        host = os.environ.get("NUKEMAI_RPC_HOST", "127.0.0.1")
+        port = int(os.environ["NUKEMAI_RPC_PORT"])
         _sock = socket.create_connection((host, port), timeout=300)
         _sock.settimeout(300)
     return _sock
@@ -678,7 +678,7 @@ def _call(tool_name, args):
     while True:
         chunk = conn.recv(65536)
         if not chunk:
-            raise RuntimeError("PilotDeck RPC server disconnected")
+            raise RuntimeError("NukemAI RPC server disconnected")
         chunks.append(chunk)
         if chunk.endswith(b"\\n"):
             break
@@ -709,14 +709,14 @@ function buildChildEnv(
 ): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...source };
   env.PYTHONPATH = source.PYTHONPATH ? `${tempRoot}${path.delimiter}${source.PYTHONPATH}` : tempRoot;
-  env.PILOTDECK_WORKSPACE_CWD = workspaceCwd;
-  env.PILOTDECK_EXECUTE_CODE_TEMP_ROOT = tempRoot;
+  env.NUKEMAI_WORKSPACE_CWD = workspaceCwd;
+  env.NUKEMAI_EXECUTE_CODE_TEMP_ROOT = tempRoot;
   if (transport.kind === "uds") {
-    env.PILOTDECK_RPC_SOCKET = transport.socketPath;
+    env.NUKEMAI_RPC_SOCKET = transport.socketPath;
   } else {
-    env.PILOTDECK_RPC_HOST = transport.host;
-    env.PILOTDECK_RPC_PORT = String(transport.port);
-    env.PILOTDECK_RPC_TOKEN = transport.token;
+    env.NUKEMAI_RPC_HOST = transport.host;
+    env.NUKEMAI_RPC_PORT = String(transport.port);
+    env.NUKEMAI_RPC_TOKEN = transport.token;
   }
   env.PYTHONDONTWRITEBYTECODE = "1";
   return env;

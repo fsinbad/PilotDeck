@@ -5,7 +5,7 @@ import SessionProviderLogo from '../../../llm-logo-provider/SessionProviderLogo'
 import type {
   ChatAttachment,
   ChatMessage,
-  PilotDeckPermissionSuggestion,
+  NukemAIPermissionSuggestion,
   Provider,
   SessionPermissionGrantResult,
 } from '../../types/types';
@@ -14,7 +14,7 @@ import {
   type DocumentSelectionReference,
 } from '../../../../types/documentSelection';
 import { formatUsageLimitText } from '../../utils/chatFormatting';
-import { getPilotDeckPermissionSuggestion } from '../../utils/chatPermissions';
+import { getNukemAIPermissionSuggestion } from '../../utils/chatPermissions';
 import type { Project } from '../../../../types/app';
 import { ToolRenderer, shouldHideToolResult } from '../../tools';
 import { CollapsibleDisplay } from '../../tools/components';
@@ -35,7 +35,7 @@ type MessageComponentProps = {
   createDiff: (oldStr: string, newStr: string) => DiffLine[];
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
-  onGrantSessionToolPermission?: (suggestion: PilotDeckPermissionSuggestion) => SessionPermissionGrantResult | null | undefined;
+  onGrantSessionToolPermission?: (suggestion: NukemAIPermissionSuggestion) => SessionPermissionGrantResult | null | undefined;
   autoExpandTools?: boolean;
   showRawParameters?: boolean;
   showThinking?: boolean;
@@ -149,7 +149,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
       (prevMessage.type === 'error'));
   const messageRef = useRef<HTMLDivElement | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const permissionSuggestion = getPilotDeckPermissionSuggestion(message, provider);
+  const permissionSuggestion = getNukemAIPermissionSuggestion(message, provider);
   const [permissionGrantState, setPermissionGrantState] = useState<PermissionGrantState>('idle');
   const rawMessageContent = stringifyMessageContent(message.content);
   const messageContent = translateDescriptor(t, message.contentI18n, rawMessageContent);
@@ -379,7 +379,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
                 </div>
               )}
               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                {message.type === 'error' ? t('messageTypes.error') : message.type === 'tool' ? t('messageTypes.tool') : (provider === 'cursor' ? t('messageTypes.cursor') : provider === 'codex' ? t('messageTypes.codex') : provider === 'gemini' ? t('messageTypes.gemini') : t('messageTypes.pilotdeck'))}
+                {message.type === 'error' ? t('messageTypes.error') : message.type === 'tool' ? t('messageTypes.tool') : (provider === 'cursor' ? t('messageTypes.cursor') : provider === 'codex' ? t('messageTypes.codex') : provider === 'gemini' ? t('messageTypes.gemini') : t('messageTypes.nukemai'))}
               </div>
             </div>
           )}

@@ -30,7 +30,7 @@ function textOf(result: Awaited<ReturnType<ReturnType<typeof createReadFileTool>
 }
 
 test("read_file auto-pages large text files instead of failing", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-large-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-read-large-"));
   try {
     const lines = Array.from({ length: 5000 }, (_, index) => `line-${index + 1} ${"x".repeat(80)}`);
     await writeFile(join(projectRoot, "large.txt"), lines.join("\n"));
@@ -49,7 +49,7 @@ test("read_file auto-pages large text files instead of failing", async () => {
 });
 
 test("read_file explicit limit reads a large file range without auto paging", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-range-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-read-range-"));
   try {
     const lines = Array.from({ length: 5000 }, (_, index) => `line-${index + 1} ${"x".repeat(80)}`);
     await writeFile(join(projectRoot, "large.txt"), lines.join("\n"));
@@ -68,7 +68,7 @@ test("read_file explicit limit reads a large file range without auto paging", as
 });
 
 test("read_file explicit limit records a ranged snapshot for follow-up edits", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-range-edit-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-read-range-edit-"));
   try {
     await writeFile(join(projectRoot, "target.txt"), "alpha\nbeta\ngamma\n");
     const runtimeContext = context(projectRoot);
@@ -88,7 +88,7 @@ test("read_file explicit limit records a ranged snapshot for follow-up edits", a
 });
 
 test("read_file auto-paged large files record a ranged snapshot for follow-up edits", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-autopage-edit-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-read-autopage-edit-"));
   try {
     const lines = Array.from({ length: 5000 }, (_, index) => `line-${index + 1} ${"x".repeat(80)}`);
     await writeFile(join(projectRoot, "large.txt"), lines.join("\n"));
@@ -109,7 +109,7 @@ test("read_file auto-paged large files record a ranged snapshot for follow-up ed
 });
 
 test("read_file returns a head-tail preview for a single oversized line", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-long-line-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-read-long-line-"));
   try {
     await writeFile(join(projectRoot, "one-line.txt"), `prefix-${"x".repeat(250_000)}-suffix`);
 

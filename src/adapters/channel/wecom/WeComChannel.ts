@@ -75,7 +75,7 @@ const DENIED_BASENAMES = new Set([
   "auth.json",
   "credentials",
   "server-token",
-  "pilotdeck.yaml",
+  "nukemai.yaml",
 ]);
 const DENIED_SEGMENTS = new Set([
   ".git",
@@ -477,7 +477,7 @@ export class WeComChannel implements ChannelAdapter {
     if (this.dmPolicy === "disabled") return false;
     if (this.dmPolicy === "allowlist") return entryMatches(this.allowFrom, senderId);
     if (this.dmPolicy === "open") return true;
-    this.logger?.warn?.("wecom: dm_policy=pairing is not supported in PilotDeck; DM ignored");
+    this.logger?.warn?.("wecom: dm_policy=pairing is not supported in NukemAI; DM ignored");
     return false;
   }
 
@@ -485,7 +485,7 @@ export class WeComChannel implements ChannelAdapter {
     if (!chatId) return false;
     if (this.groupPolicy === "disabled") return false;
     if (this.groupPolicy === "pairing") {
-      this.logger?.warn?.("wecom: group_policy=pairing is not supported in PilotDeck; group message ignored");
+      this.logger?.warn?.("wecom: group_policy=pairing is not supported in NukemAI; group message ignored");
       return false;
     }
     if (this.groupPolicy === "allowlist" && !entryMatches(this.groupAllowFrom, chatId)) {
@@ -862,7 +862,7 @@ export class WeComChannel implements ChannelAdapter {
 
     const rawName = String(media.filename ?? media.name ?? `wecom_${kind}${defaultExtForMedia(kind)}`).trim();
     const safeName = safeFileName(rawName || `wecom_${kind}${defaultExtForMedia(kind)}`);
-    const dir = join(tmpdir(), "pilotdeck-wecom-media");
+    const dir = join(tmpdir(), "nukemai-wecom-media");
     await mkdir(dir, { recursive: true });
     const filePath = join(dir, `${Date.now()}-${this.uuid().replace(/-/g, "")}-${safeName}`);
     await writeFile(filePath, data, { mode: 0o600 });
@@ -1202,7 +1202,7 @@ export class WeComChannel implements ChannelAdapter {
       throw new Error(`unsupported media URL protocol: ${parsed.protocol}`);
     }
     const response = await fetch(url, {
-      headers: { "User-Agent": "PilotDeck/1.0", "Accept": "*/*" },
+      headers: { "User-Agent": "NukemAI/1.0", "Accept": "*/*" },
       signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1571,10 +1571,10 @@ function mediaTypeForDeliverableExt(ext: string): WeComMediaType {
 function isDeniedDeliverablePath(path: string): boolean {
   const normalized = resolve(path);
   const home = homedir();
-  const pilotHome = process.env.PILOT_HOME || join(home, ".pilotdeck");
+  const pilotHome = process.env.PILOT_HOME || join(home, ".nukemai");
   if (pathUnder(normalized, join(home, ".ssh"))) return true;
   if (pathUnder(normalized, join(pilotHome, "server-token"))) return true;
-  if (pathUnder(normalized, join(pilotHome, "pilotdeck.yaml"))) return true;
+  if (pathUnder(normalized, join(pilotHome, "nukemai.yaml"))) return true;
 
   const lowerBase = basename(normalized).toLowerCase();
   if (DENIED_BASENAMES.has(lowerBase)) return true;

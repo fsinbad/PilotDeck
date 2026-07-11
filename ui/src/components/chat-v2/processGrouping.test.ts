@@ -63,7 +63,7 @@ function normalizedText(
   return {
     id,
     sessionId: 'session-1',
-    provider: 'pilotdeck',
+    provider: 'nukemai',
     kind: 'text',
     role,
     content,
@@ -80,7 +80,7 @@ function normalizedTool(
   return {
     id,
     sessionId: 'session-1',
-    provider: 'pilotdeck',
+    provider: 'nukemai',
     kind: 'tool_use',
     toolName,
     toolId: id,

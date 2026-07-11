@@ -6,8 +6,8 @@ import type {
   ChatMessage,
   ChatRunMode,
   ClaudeWorkStatus,
-  PilotDeckWorkStatus,
-  PilotDeckPermissionSuggestion,
+  NukemAIWorkStatus,
+  NukemAIPermissionSuggestion,
   SessionPermissionGrantResult,
 } from '../chat/types/types';
 import type { SessionStore } from '../../stores/useSessionStore';
@@ -59,7 +59,7 @@ type MessagesPaneV2Props = {
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
   onGrantSessionToolPermission?: (
-    suggestion: PilotDeckPermissionSuggestion,
+    suggestion: NukemAIPermissionSuggestion,
   ) => SessionPermissionGrantResult | null | undefined;
   autoExpandTools?: boolean;
   showRawParameters?: boolean;
@@ -67,7 +67,7 @@ type MessagesPaneV2Props = {
   inlineThinking?: boolean;
   setInput: Dispatch<SetStateAction<string>>;
   isAssistantWorking?: boolean;
-  workingStatus?: ClaudeWorkStatus | PilotDeckWorkStatus | null;
+  workingStatus?: ClaudeWorkStatus | NukemAIWorkStatus | null;
   runMode?: ChatRunMode;
   planModeActive?: boolean;
   sessionStore?: SessionStore;
@@ -1212,7 +1212,7 @@ function activityToLiveStep(activity: ChatMessage): ProcessTraceStep {
 
 function getLiveStatusStep(
   activities: ChatMessage[],
-  workingStatus: ClaudeWorkStatus | PilotDeckWorkStatus | null | undefined,
+  workingStatus: ClaudeWorkStatus | NukemAIWorkStatus | null | undefined,
   hasAssistantContent: boolean,
   hasPendingToolUse: boolean,
   t: (key: string, options?: Record<string, unknown>) => string,

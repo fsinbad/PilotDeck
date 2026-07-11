@@ -42,7 +42,7 @@ type ReloadInfo = {
   at: number;
 };
 
-export function usePilotDeckConfig() {
+export function useNukemAIConfig() {
   const [path, setPath] = useState('');
   const [raw, setRaw] = useState('');
   const [exists, setExists] = useState(false);

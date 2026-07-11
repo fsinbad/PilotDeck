@@ -26,9 +26,9 @@ function context(cwd: string) {
   };
 }
 
-test("large tool results are persisted under workspace .pilotdeck and readable by read_file", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-readable-tool-result-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-home-"));
+test("large tool results are persisted under workspace .nukemai and readable by read_file", async () => {
+  const projectRoot = await mkdtemp(join(tmpdir(), "nukemai-readable-tool-result-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "nukemai-home-"));
   try {
     const storage = createAgentProjectSessionStorage({
       projectRoot,
@@ -36,7 +36,7 @@ test("large tool results are persisted under workspace .pilotdeck and readable b
       sessionId: "web:s_test",
       now: () => new Date("2026-07-09T00:00:00.000Z"),
     });
-    assert.match(relative(projectRoot, storage.toolResultsDir), /^\.pilotdeck[\/\\]tool-results[\/\\]/);
+    assert.match(relative(projectRoot, storage.toolResultsDir), /^\.nukemai[\/\\]tool-results[\/\\]/);
 
     const budget = new ToolResultBudget({ toolResultsDir: storage.toolResultsDir, maxResultSizeChars: 64, previewBytes: 32 });
     const message = await budget.applyToMessage({
@@ -50,7 +50,7 @@ test("large tool results are persisted under workspace .pilotdeck and readable b
 
     const ref = message.content.find((block) => block.type === "tool_result_reference");
     assert.ok(ref, "expected a persisted tool_result_reference");
-    assert.match(relative(projectRoot, ref.path), /^\.pilotdeck[\/\\]tool-results[\/\\]/);
+    assert.match(relative(projectRoot, ref.path), /^\.nukemai[\/\\]tool-results[\/\\]/);
 
     const read = await createReadFileTool().execute({ file_path: ref.path }, context(projectRoot));
     const text = read.content[0]?.type === "text" ? read.content[0].text : "";

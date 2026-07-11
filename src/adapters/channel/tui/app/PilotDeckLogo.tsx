@@ -25,7 +25,7 @@ const STANDARD_LOGO = [
   " |_|   |_|_|\\___/ \\__|____/ \\___|\\___|_|\\_\\",
 ];
 
-export function PilotDeckLogo({ tagline }: { tagline?: string } = {}): React.ReactNode {
+export function NukemAILogo({ tagline }: { tagline?: string } = {}): React.ReactNode {
   const { stdout } = useStdout();
   const cols = stdout?.columns ?? 80;
   const useShadow = cols >= ANSI_SHADOW_MIN_TERMINAL_COLS;

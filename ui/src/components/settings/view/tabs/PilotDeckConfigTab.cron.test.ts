@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isCronConfigEnabled, patch } from './pilotDeckConfigForm';
 
-describe('PilotDeckConfigTab Cron settings', () => {
+describe('NukemAIConfigTab Cron settings', () => {
   it.each([
     { label: 'missing cron section', config: {}, expected: false },
     { label: 'cron section without enabled', config: { cron: {} }, expected: true },

@@ -2,17 +2,17 @@ import express from 'express';
 import { userDb } from '../database/db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { getSystemGitConfig } from '../utils/gitConfig.js';
-import { readPilotDeckConfigFile } from '../services/pilotdeckConfig.js';
+import { readNukemAIConfigFile } from '../services/nukemaiConfig.js';
 import { spawn } from 'child_process';
 
 const router = express.Router();
 
-// Sentinel api-key written by scripts/bootstrap-pilotdeck-config.mjs so the
+// Sentinel api-key written by scripts/bootstrap-nukemai-config.mjs so the
 // engine can boot. Treated as "not configured" so the UI routes to onboarding.
 const PLACEHOLDER_API_KEY = 'PLACEHOLDER_RUN_ONBOARDING_TO_REPLACE';
 
-function hasUsablePilotDeckConfig() {
-  const record = readPilotDeckConfigFile();
+function hasUsableNukemAIConfig() {
+  const record = readNukemAIConfigFile();
   if (!record.exists) return false;
 
   const mainRef = typeof record.config?.agent?.model === 'string'
@@ -138,7 +138,7 @@ router.post('/complete-onboarding', authenticateToken, async (req, res) => {
 
 router.get('/onboarding-status', authenticateToken, async (req, res) => {
   try {
-    const hasCompleted = hasUsablePilotDeckConfig();
+    const hasCompleted = hasUsableNukemAIConfig();
 
     res.json({
       success: true,

@@ -14,7 +14,7 @@ export function getGlobalMcpConfigFilePath(pilotHome: string): string {
 }
 
 export function getProjectMcpConfigFilePath(projectRoot: string): string {
-  return resolve(projectRoot, ".pilotdeck", MCP_CONFIG_FILE_NAME);
+  return resolve(projectRoot, ".nukemai", MCP_CONFIG_FILE_NAME);
 }
 
 export function loadMcpServerConfig(projectRoot: string, pilotHome: string): LoadMcpServerConfigResult {

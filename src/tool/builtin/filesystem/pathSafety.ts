@@ -1,21 +1,21 @@
 import path from "node:path";
 import { realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import type { PilotDeckToolRuntimeContext } from "../../protocol/types.js";
-import type { PilotDeckToolError } from "../../protocol/errors.js";
+import type { NukemAIToolRuntimeContext } from "../../protocol/types.js";
+import type { NukemAIToolError } from "../../protocol/errors.js";
 import { toolError } from "../../protocol/errors.js";
 
-export type PilotDeckPathSafetyResult =
+export type NukemAIPathSafetyResult =
   | { ok: true; absolutePath: string; relativePath: string; root: string }
-  | { ok: false; error: PilotDeckToolError };
+  | { ok: false; error: NukemAIToolError };
 
 const DEFAULT_WRITE_DENY_DIRECTORIES = new Set([".git", "node_modules", "dist"]);
 
-export function resolvePilotDeckWorkspacePath(
+export function resolveNukemAIWorkspacePath(
   inputPath: string,
-  context: PilotDeckToolRuntimeContext,
+  context: NukemAIToolRuntimeContext,
   options?: { forWrite?: boolean; mustExist?: boolean; allowOutsideWorkspace?: boolean; allowRegisteredReadFiles?: boolean },
-): PilotDeckPathSafetyResult {
+): NukemAIPathSafetyResult {
   if (!inputPath || inputPath.includes("\0")) {
     return {
       ok: false,
@@ -73,7 +73,7 @@ export function resolvePilotDeckWorkspacePath(
 
     return {
       ok: false,
-      error: toolError("path_not_allowed", `Path ${inputPath} is outside the PilotDeck workspace.`),
+      error: toolError("path_not_allowed", `Path ${inputPath} is outside the NukemAI workspace.`),
     };
   }
 
@@ -98,7 +98,7 @@ export function resolvePilotDeckWorkspacePath(
     if (!isPathWithinRoot(real, realRoot)) {
       return {
         ok: false,
-        error: toolError("path_not_allowed", `Path ${inputPath} resolves outside the PilotDeck workspace.`),
+        error: toolError("path_not_allowed", `Path ${inputPath} resolves outside the NukemAI workspace.`),
       };
     }
   }
@@ -128,8 +128,8 @@ function safeRealpath(value: string): string | undefined {
   }
 }
 
-function isManagedImAttachmentFile(realPath: string, context: PilotDeckToolRuntimeContext): boolean {
-  const pilotHome = path.resolve(context.env?.PILOT_HOME ?? path.join(homedir(), ".pilotdeck"));
+function isManagedImAttachmentFile(realPath: string, context: NukemAIToolRuntimeContext): boolean {
+  const pilotHome = path.resolve(context.env?.PILOT_HOME ?? path.join(homedir(), ".nukemai"));
   const root = safeRealpath(path.join(pilotHome, "im-attachments")) ?? path.join(pilotHome, "im-attachments");
   return isPathWithinRoot(realPath, root) && isRegularFile(realPath);
 }

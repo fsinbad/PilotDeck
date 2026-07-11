@@ -1,20 +1,20 @@
 /**
- * PILOTDECK.md instruction file discovery — multi-scope instruction hierarchy.
+ * NUKEMAI.md instruction file discovery — multi-scope instruction hierarchy.
  *
  * Files are loaded in the following order (later = higher priority, model pays
  * more attention to content that appears later in the system prompt):
  *
- *   1. Managed     — $PILOTDECK_MANAGED_CONFIG/PILOTDECK.md
- *   2. User        — ~/.pilotdeck/PILOTDECK.md
- *   3. User rules  — ~/.pilotdeck/rules/*.md
+ *   1. Managed     — $NUKEMAI_MANAGED_CONFIG/NUKEMAI.md
+ *   2. User        — ~/.nukemai/NUKEMAI.md
+ *   3. User rules  — ~/.nukemai/rules/*.md
  *   4. Project     — per directory from projectRoot toward cwd:
- *                      <dir>/PILOTDECK.md
- *                      <dir>/.pilotdeck/PILOTDECK.md
- *                      <dir>/.pilotdeck/rules/*.md
- *   5. Local       — <dir>/PILOTDECK.local.md  (private, not committed)
+ *                      <dir>/NUKEMAI.md
+ *                      <dir>/.nukemai/NUKEMAI.md
+ *                      <dir>/.nukemai/rules/*.md
+ *   5. Local       — <dir>/NUKEMAI.local.md  (private, not committed)
  *
  * Design mirrors the legacy upstream instruction-file discovery, adapted to
- * PilotDeck path conventions (~/.pilotdeck/, .pilotdeck/).
+ * NukemAI path conventions (~/.nukemai/, .nukemai/).
  */
 
 import { readFile, readdir } from "node:fs/promises";
@@ -44,23 +44,23 @@ export class InstructionDiscovery {
     const layers: InstructionLayer[] = [];
     const seen = new Set<string>();
 
-    // 1. Managed (administrator-level, e.g. /etc/pilotdeck/)
-    const managedDir = process.env.PILOTDECK_MANAGED_CONFIG;
+    // 1. Managed (administrator-level, e.g. /etc/nukemai/)
+    const managedDir = process.env.NUKEMAI_MANAGED_CONFIG;
     if (managedDir) {
-      await this.tryAdd(layers, seen, "managed", join(managedDir, "PILOTDECK.md"));
+      await this.tryAdd(layers, seen, "managed", join(managedDir, "NUKEMAI.md"));
     }
 
     // 2. User-level
-    await this.tryAdd(layers, seen, "user", join(this.pilotHome, "PILOTDECK.md"));
+    await this.tryAdd(layers, seen, "user", join(this.pilotHome, "NUKEMAI.md"));
     await this.tryAddRulesDir(layers, seen, "user", join(this.pilotHome, "rules"));
 
     // 3–5. Project + Local — from root toward cwd (root first = lower priority)
     const dirs = this.collectDirectoryChain();
     for (const dir of dirs) {
-      await this.tryAdd(layers, seen, "project", join(dir, "PILOTDECK.md"));
-      await this.tryAdd(layers, seen, "project", join(dir, ".pilotdeck", "PILOTDECK.md"));
-      await this.tryAddRulesDir(layers, seen, "project-rules", join(dir, ".pilotdeck", "rules"));
-      await this.tryAdd(layers, seen, "local", join(dir, "PILOTDECK.local.md"));
+      await this.tryAdd(layers, seen, "project", join(dir, "NUKEMAI.md"));
+      await this.tryAdd(layers, seen, "project", join(dir, ".nukemai", "NUKEMAI.md"));
+      await this.tryAddRulesDir(layers, seen, "project-rules", join(dir, ".nukemai", "rules"));
+      await this.tryAdd(layers, seen, "local", join(dir, "NUKEMAI.local.md"));
     }
 
     return layers;

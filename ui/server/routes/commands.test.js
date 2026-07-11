@@ -18,7 +18,7 @@ afterEach(() => {
 
 describe('commands routes', () => {
   it('executes user commands discovered under custom PILOT_HOME', async () => {
-    const pilotHome = mkdtempSync(join(tmpdir(), 'pilotdeck-commands-route-'));
+    const pilotHome = mkdtempSync(join(tmpdir(), 'nukemai-commands-route-'));
     tempDirs.push(pilotHome);
     process.env.PILOT_HOME = pilotHome;
 
@@ -34,7 +34,7 @@ describe('commands routes', () => {
       body: JSON.stringify({
         commandName: '/hello',
         commandPath,
-        args: ['PilotDeck'],
+        args: ['NukemAI'],
       }),
     });
 
@@ -42,7 +42,7 @@ describe('commands routes', () => {
     expect(result.body).toMatchObject({
       type: 'custom',
       command: '/hello',
-      content: 'Hello PilotDeck',
+      content: 'Hello NukemAI',
     });
   });
 });
@@ -56,8 +56,8 @@ async function createCommandsApp() {
     getClaudeRuntimeModelConfig: vi.fn(() => ({})),
     getClaudeRuntimeModelValues: vi.fn(() => []),
   }));
-  vi.doMock('../services/pilotdeckConfig.js', () => ({
-    readPilotDeckConfigFile: vi.fn(() => ({ config: {} })),
+  vi.doMock('../services/nukemaiConfig.js', () => ({
+    readNukemAIConfigFile: vi.fn(() => ({ config: {} })),
     resolveModel: vi.fn((model) => model),
   }));
   vi.doMock('../turnkey-slash.js', () => ({

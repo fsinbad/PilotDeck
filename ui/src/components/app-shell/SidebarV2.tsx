@@ -34,8 +34,8 @@ import {
   setSessionCustomTitle,
   useCustomNamesVersion,
 } from '../../lib/customNames';
-import pilotdeckLogoDark from '../../assets/pilotdeck-wordmark-dark.png';
-import pilotdeckLogoLight from '../../assets/pilotdeck-wordmark-light.png';
+import nukemaiLogoDark from '../../assets/nukemai-wordmark-dark.png';
+import nukemaiLogoLight from '../../assets/nukemai-wordmark-light.png';
 
 const asTimestamp = (value: unknown): number => {
   if (typeof value === 'number') return value;
@@ -49,13 +49,13 @@ const asTimestamp = (value: unknown): number => {
 type ProjectSortOrder = 'name' | 'date';
 
 // The Settings dialog persists `projectSortOrder` into the same
-// `pilotdeck-settings` localStorage blob the chat surface uses. Up to
+// `nukemai-settings` localStorage blob the chat surface uses. Up to
 // this point nothing on the sidebar consumed it, so the dropdown
 // changed nothing. We read it here and re-render whenever the Settings
-// tab broadcasts a `pilotdeck-settings-changed` event.
+// tab broadcasts a `nukemai-settings-changed` event.
 const readProjectSortOrder = (): ProjectSortOrder => {
   if (typeof window === 'undefined') return 'name';
-  const raw = window.localStorage.getItem('pilotdeck-settings');
+  const raw = window.localStorage.getItem('nukemai-settings');
   if (!raw) return 'name';
   try {
     const parsed = JSON.parse(raw) as { projectSortOrder?: unknown };
@@ -70,12 +70,12 @@ const useProjectSortOrder = (): ProjectSortOrder => {
   useEffect(() => {
     const refresh = () => setOrder(readProjectSortOrder());
     const onStorage = (event: StorageEvent) => {
-      if (event.key === 'pilotdeck-settings') refresh();
+      if (event.key === 'nukemai-settings') refresh();
     };
-    window.addEventListener('pilotdeck-settings-changed', refresh);
+    window.addEventListener('nukemai-settings-changed', refresh);
     window.addEventListener('storage', onStorage);
     return () => {
-      window.removeEventListener('pilotdeck-settings-changed', refresh);
+      window.removeEventListener('nukemai-settings-changed', refresh);
       window.removeEventListener('storage', onStorage);
     };
   }, []);
@@ -1033,19 +1033,19 @@ export default function SidebarV2({
                 navigate('/');
               }
             }}
-            aria-label="PilotDeck"
-            title="PilotDeck"
+            aria-label="NukemAI"
+            title="NukemAI"
             className="flex min-w-0 shrink items-center gap-2 rounded-md p-1 transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700"
           >
             <img
-              src={pilotdeckLogoLight}
-              alt="PilotDeck"
+              src={nukemaiLogoLight}
+              alt="NukemAI"
               className="h-7 w-auto max-w-[150px] select-none object-contain dark:hidden"
               draggable={false}
             />
             <img
-              src={pilotdeckLogoDark}
-              alt="PilotDeck"
+              src={nukemaiLogoDark}
+              alt="NukemAI"
               className="hidden h-7 w-auto max-w-[150px] select-none object-contain dark:block"
               draggable={false}
             />

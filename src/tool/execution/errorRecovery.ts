@@ -1,4 +1,4 @@
-import type { PilotDeckToolErrorCode } from "../protocol/errors.js";
+import type { NukemAIToolErrorCode } from "../protocol/errors.js";
 
 export type ToolErrorFailureClass =
   | "fix_input"
@@ -22,7 +22,7 @@ export type ToolErrorRecoveryResult = {
 };
 
 export function buildToolErrorRecovery(options: {
-  code: PilotDeckToolErrorCode;
+  code: NukemAIToolErrorCode;
   toolName: string;
   message: string;
   cwd: string;
@@ -54,7 +54,7 @@ export function buildToolErrorRecovery(options: {
 }
 
 function formatRecoveryMessage(
-  code: PilotDeckToolErrorCode,
+  code: NukemAIToolErrorCode,
   toolName: string,
   advice: ToolErrorRecoveryAdvice,
 ): string {
@@ -85,7 +85,7 @@ function formatRecoveryMessage(
 }
 
 function summarizeError(
-  code: PilotDeckToolErrorCode,
+  code: NukemAIToolErrorCode,
   toolName: string,
   rawMessage: string,
   evidence: string[],
@@ -109,7 +109,7 @@ function summarizeError(
 }
 
 function classifyError(
-  code: PilotDeckToolErrorCode,
+  code: NukemAIToolErrorCode,
   toolName: string,
   rawMessage: string,
   details?: Record<string, unknown>,
@@ -165,7 +165,7 @@ function classifyError(
 }
 
 function classifyWebFetchError(
-  code: PilotDeckToolErrorCode,
+  code: NukemAIToolErrorCode,
   rawMessage: string,
   details?: Record<string, unknown>,
 ): ToolErrorFailureClass | undefined {
@@ -201,7 +201,7 @@ function classifyWebFetchError(
 }
 
 function baseNextActions(
-  code: PilotDeckToolErrorCode,
+  code: NukemAIToolErrorCode,
   toolName: string,
   context: { cwd: string; permissionMode: string },
   details?: Record<string, unknown>,
@@ -260,7 +260,7 @@ function baseNextActions(
 }
 
 function webFetchNextActions(
-  code: PilotDeckToolErrorCode,
+  code: NukemAIToolErrorCode,
   details?: Record<string, unknown>,
 ): string[] {
   if (code === "invalid_tool_input") {
@@ -304,7 +304,7 @@ function webFetchNextActions(
   return [];
 }
 
-function defaultAvoidRetryReason(code: PilotDeckToolErrorCode): string | undefined {
+function defaultAvoidRetryReason(code: NukemAIToolErrorCode): string | undefined {
   switch (code) {
     case "permission_required":
       return "This tool requires user approval; repeated calls cannot grant approval.";

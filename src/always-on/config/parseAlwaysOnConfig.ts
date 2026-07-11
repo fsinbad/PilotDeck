@@ -51,8 +51,8 @@ export type AlwaysOnConfig = {
 export const DEFAULT_IGNORE_GLOBS: string[] = [
   "**/.git/**",
   "**/node_modules/**",
-  "**/.pilotdeck/**",
-  "**/.pilotdeck-always-on/**",
+  "**/.nukemai/**",
+  "**/.nukemai-always-on/**",
   "**/dist/**",
   "**/.DS_Store",
 ];

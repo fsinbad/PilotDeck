@@ -52,11 +52,11 @@ const RISKY_EXTS = new Set([
 ]);
 
 export type SkillManagerOptions = {
-  /** Resolved `~/.pilotdeck` root. Required. */
+  /** Resolved `~/.nukemai` root. Required. */
   pilotHome: string;
   /**
    * "General chat" cwds we treat as not-a-real-project. Defaults to
-   * `pilotHome` (~/.pilotdeck). When the caller passes a `projectKey`
+   * `pilotHome` (~/.nukemai). When the caller passes a `projectKey`
    * matching one of these, the manager behaves as if no project was set —
    * only user-scope skills are visible.
    */
@@ -66,9 +66,9 @@ export type SkillManagerOptions = {
 /**
  * Authoritative skill-CRUD layer used by every host (gateway clients,
  * UI server, future SDK callers). Owns the on-disk layout under
- * `~/.pilotdeck/skills/` (user scope) and `<projectRoot>/.pilotdeck/skills/`
+ * `~/.nukemai/skills/` (user scope) and `<projectRoot>/.nukemai/skills/`
  * (project scope). Legacy third-party skill directories are intentionally
- * not consulted — conflating them with PilotDeck's layout caused the
+ * not consulted — conflating them with NukemAI's layout caused the
  * UI/agent skill drift the migration fixes.
  */
 export class SkillManager {

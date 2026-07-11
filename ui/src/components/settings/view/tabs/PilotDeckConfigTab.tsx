@@ -41,7 +41,7 @@ import {
   type OfficePreviewService,
   type OfficePreviewStatus,
 } from '../../../../utils/officePreviewStatus';
-import { usePilotDeckConfig, type ConfigReload } from '../../../../hooks/usePilotDeckConfig';
+import { useNukemAIConfig, type ConfigReload } from '../../../../hooks/useNukemAIConfig';
 import {
   getAlwaysOnProjectRoot,
   isAlwaysOnProjectEnabled,
@@ -64,7 +64,7 @@ import type { SettingsProject } from '../../types/types';
 import { isCronConfigEnabled, patch } from './pilotDeckConfigForm';
 
 // ── V2 schema types ────────────────────────────────────────────────────
-// Schema mirrors ~/.pilotdeck/pilotdeck.yaml exactly. No more
+// Schema mirrors ~/.nukemai/nukemai.yaml exactly. No more
 // pre-/post-translation in the backend — disk shape === UI shape.
 
 type MemoryReasoningMode = 'answer_first' | 'accuracy_first';
@@ -85,7 +85,7 @@ type V2Provider = {
   };
 };
 
-type PilotDeckConfig = {
+type NukemAIConfig = {
   schemaVersion?: number;
   agent?: {
     model?: string;
@@ -290,7 +290,7 @@ function statusDotClasses(state: StatusState): string {
   return 'bg-muted-foreground/60';
 }
 
-function fallbackSubsystemStatus(key: SubsystemKey, config: PilotDeckConfig | null): { state: StatusState; detailKey: string } {
+function fallbackSubsystemStatus(key: SubsystemKey, config: NukemAIConfig | null): { state: StatusState; detailKey: string } {
   if (!config) {
     return { state: 'unknown', detailKey: 'pending' };
   }
@@ -312,7 +312,7 @@ function fallbackSubsystemStatus(key: SubsystemKey, config: PilotDeckConfig | nu
     : { state: 'skipped', detailKey: 'gateway.disabled' };
 }
 
-function subsystemStatus(key: SubsystemKey, config: PilotDeckConfig | null, reload: ConfigReload | null): { state: StatusState; detailKey: string; detail?: string } {
+function subsystemStatus(key: SubsystemKey, config: NukemAIConfig | null, reload: ConfigReload | null): { state: StatusState; detailKey: string; detail?: string } {
   const fallback = fallbackSubsystemStatus(key, config);
   const result = reload?.[key] as SubsystemResult | undefined;
 
@@ -332,7 +332,7 @@ function ConfigStatusGrid({
   config,
   reload,
 }: {
-  config: PilotDeckConfig | null;
+  config: NukemAIConfig | null;
   reload: ConfigReload | null;
 }) {
   const { t } = useTranslation('settings');
@@ -358,10 +358,10 @@ function ConfigStatusGrid({
 
 // ── Form-mode helpers ──────────────────────────────────────────────────
 
-function safeParseYaml(text: string): PilotDeckConfig | null {
+function safeParseYaml(text: string): NukemAIConfig | null {
   try {
     const value = parseYaml(text);
-    if (value && typeof value === 'object' && !Array.isArray(value)) return value as PilotDeckConfig;
+    if (value && typeof value === 'object' && !Array.isArray(value)) return value as NukemAIConfig;
     return null;
   } catch {
     return null;
@@ -376,7 +376,7 @@ function safeParseYaml(text: string): PilotDeckConfig | null {
  * who care about hand-formatted YAML should use the Raw YAML tab — that mode
  * just edits the textarea and never reserializes.
  */
-function configToYamlString(config: PilotDeckConfig): string {
+function configToYamlString(config: NukemAIConfig): string {
   return stringifyYaml(config, { indent: 2, lineWidth: 0 });
 }
 
@@ -386,7 +386,7 @@ function rewriteProviderRef(value: unknown, oldProviderId: string, newProviderId
   return `${newProviderId}/${value.slice(oldPrefix.length)}`;
 }
 
-function rewriteProviderRefs(config: PilotDeckConfig, oldProviderId: string, newProviderId: string): PilotDeckConfig {
+function rewriteProviderRefs(config: NukemAIConfig, oldProviderId: string, newProviderId: string): NukemAIConfig {
   let next = config;
 
   const agentModel = rewriteProviderRef(next.agent?.model, oldProviderId, newProviderId);
@@ -459,7 +459,7 @@ function rewriteProviderRefs(config: PilotDeckConfig, oldProviderId: string, new
   return next;
 }
 
-function replaceFallbackModelRef(config: PilotDeckConfig, oldRef: string, newRef: string): PilotDeckConfig {
+function replaceFallbackModelRef(config: NukemAIConfig, oldRef: string, newRef: string): NukemAIConfig {
   const fallback = config.router?.fallback;
   if (!fallback || !oldRef || oldRef === newRef) return config;
 
@@ -667,11 +667,11 @@ function FormRow({ label, description, children }: { label: string; description?
 
 // ── Section components ─────────────────────────────────────────────────
 
-function getOfficePreviewService(config: PilotDeckConfig): OfficePreviewService {
+function getOfficePreviewService(config: NukemAIConfig): OfficePreviewService {
   return config.webui?.officePreview?.service === 'none' ? 'none' : 'libreoffice';
 }
 
-function ServiceSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function ServiceSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const r = config.webui?.runtime ?? {};
@@ -714,7 +714,7 @@ function ServiceSection({ config, onChange }: { config: PilotDeckConfig; onChang
               <NumberInput value={r.apiTimeoutMs} placeholder="120000" onChange={(v) => set('apiTimeoutMs', v)} />
             </FormRow>
             <FormRow label={t('pilotDeckConfig.panels.runtime.fields.databasePath.label')} description={t('pilotDeckConfig.panels.runtime.fields.databasePath.description')}>
-              <TextInput value={r.databasePath} placeholder="~/.pilotdeck/auth.db" monospace onChange={(v) => set('databasePath', v)} />
+              <TextInput value={r.databasePath} placeholder="~/.nukemai/auth.db" monospace onChange={(v) => set('databasePath', v)} />
             </FormRow>
             <FormRow label={t('pilotDeckConfig.panels.runtime.fields.proxyUrl.label')} description={t('pilotDeckConfig.panels.runtime.fields.proxyUrl.description')}>
               <TextInput value={config.proxy?.url} placeholder="http://127.0.0.1:7890" monospace onChange={(v) => onChange(patch(config, ['proxy', 'url'], v))} />
@@ -729,7 +729,7 @@ function ServiceSection({ config, onChange }: { config: PilotDeckConfig; onChang
   );
 }
 
-function OfficePreviewSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function OfficePreviewSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const [status, setStatus] = useState<OfficePreviewStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -1380,7 +1380,7 @@ function CatalogPicker({
   );
 }
 
-function ModelsSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function ModelsSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const providers = config.model?.providers ?? {};
   const ids = Object.keys(providers);
@@ -1467,7 +1467,7 @@ function splitModelRef(ref: string | undefined): { providerId: string; modelId: 
   return { providerId: value.slice(0, slash), modelId: value.slice(slash + 1) };
 }
 
-function ensureModelRefConfigured<T extends PilotDeckConfig>(config: T, ref: string | undefined): T {
+function ensureModelRefConfigured<T extends NukemAIConfig>(config: T, ref: string | undefined): T {
   const parsed = splitModelRef(ref);
   if (!parsed) return config;
 
@@ -1478,14 +1478,14 @@ function ensureModelRefConfigured<T extends PilotDeckConfig>(config: T, ref: str
   return patch(config, ['model', 'providers', parsed.providerId, 'models', parsed.modelId], {});
 }
 
-function ensureModelRefsConfigured<T extends PilotDeckConfig>(config: T, refs: Array<string | undefined>): T {
+function ensureModelRefsConfigured<T extends NukemAIConfig>(config: T, refs: Array<string | undefined>): T {
   return refs.reduce((next, ref) => ensureModelRefConfigured(next, ref), config);
 }
 
 // Build the "provider/model" options for agent / memory / router model dropdowns
 // from configured providers. Catalog providers expose every catalog model, while
 // custom/off-catalog models come from the provider's saved models map.
-function buildModelRefOptions(config: PilotDeckConfig): Array<{ value: string; label: string }> {
+function buildModelRefOptions(config: NukemAIConfig): Array<{ value: string; label: string }> {
   const out: Array<{ value: string; label: string }> = [];
   const providers = config.model?.providers ?? {};
   for (const [pid, prov] of Object.entries(providers)) {
@@ -1534,7 +1534,7 @@ function readPositiveCapability(capabilities: unknown, key: 'maxContextTokens' |
     : undefined;
 }
 
-function activeModelCapabilities(config: PilotDeckConfig): {
+function activeModelCapabilities(config: NukemAIConfig): {
   ref: string;
   providerId: string;
   modelId: string;
@@ -1576,7 +1576,7 @@ function activeModelCapabilities(config: PilotDeckConfig): {
   return { ref, providerId, modelId, catalogModel, catalogProvider, multimodalInput, maxContextTokens, maxOutputTokens };
 }
 
-function AgentsSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function AgentsSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const refOptions = buildModelRefOptions(config);
@@ -1778,7 +1778,7 @@ const WELL_KNOWN_ENV_KEYS = [
   { key: 'BROWSERBASE_API_KEY', hint: 'Browserbase API key' },
 ];
 
-function CustomEnvSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function CustomEnvSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const envMap = config.customEnv ?? {};
   const entries = Object.entries(envMap);
@@ -1909,9 +1909,9 @@ function AlwaysOnSection({
   projects,
   onChange,
 }: {
-  config: PilotDeckConfig;
+  config: NukemAIConfig;
   projects: SettingsProject[];
-  onChange: (next: PilotDeckConfig) => void;
+  onChange: (next: NukemAIConfig) => void;
 }) {
   const { t } = useTranslation('settings');
   const ao = config.alwaysOn ?? {};
@@ -2037,7 +2037,7 @@ function AlwaysOnSection({
                 <FormRow label={t('pilotDeckConfig.panels.alwaysOn.dormancy.ignoreGlobs.label')} description={t('pilotDeckConfig.panels.alwaysOn.dormancy.ignoreGlobs.description')}>
                   <textarea
                     value={(dormancy.ignoreGlobs ?? []).join('\n')}
-                    placeholder={"**/.git/**\n**/node_modules/**\n**/.pilotdeck/**\n**/dist/**\n**/.DS_Store"}
+                    placeholder={"**/.git/**\n**/node_modules/**\n**/.nukemai/**\n**/dist/**\n**/.DS_Store"}
                     onChange={(e) => {
                       const globs = e.target.value.split('\n').filter((s) => s.trim().length > 0);
                       onChange(patch(config, ['alwaysOn', 'dormancy', 'ignoreGlobs'], globs));
@@ -2162,7 +2162,7 @@ function AlwaysOnSection({
   );
 }
 
-function CronSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function CronSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const cron = config.cron ?? {};
   const enabled = isCronConfigEnabled(config);
@@ -2289,9 +2289,9 @@ function MemorySection({
   projects,
   onChange,
 }: {
-  config: PilotDeckConfig;
+  config: NukemAIConfig;
   projects: SettingsProject[];
-  onChange: (next: PilotDeckConfig) => void;
+  onChange: (next: NukemAIConfig) => void;
 }) {
   const { t } = useTranslation('settings');
   const m = config.memory ?? {};
@@ -2351,7 +2351,7 @@ function MemorySection({
   const actionBusy = memoryAction.kind === 'busy';
   const canManageTarget = targetIsAllMemory || Boolean(selectedProjectPath);
 
-  const setMemoryField = (field: keyof NonNullable<PilotDeckConfig['memory']>, value: unknown) => {
+  const setMemoryField = (field: keyof NonNullable<NukemAIConfig['memory']>, value: unknown) => {
     onChange(patch(config, ['memory', field], value));
   };
 
@@ -2404,7 +2404,7 @@ function MemorySection({
       if (!body) {
         throw new Error(t('pilotDeckConfig.panels.memory.data.errors.invalidExport'));
       }
-      const prefix = targetIsAllMemory ? 'pilotdeck-memory-all' : `pilotdeck-memory-${safeDownloadToken(selectedTargetLabel)}`;
+      const prefix = targetIsAllMemory ? 'nukemai-memory-all' : `nukemai-memory-${safeDownloadToken(selectedTargetLabel)}`;
       downloadMemoryText(raw, `${prefix}-${Date.now()}.json`);
       setActionSuccess('pilotDeckConfig.panels.memory.data.status.exported');
     } catch (error) {
@@ -2630,7 +2630,7 @@ function MemorySection({
   );
 }
 
-function ToolsSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function ToolsSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const glmDefaultEndpoint = 'https://api.z.ai/api/paas/v4/web_search';
   const ws = config.tools?.webSearch ?? {};
@@ -2669,7 +2669,7 @@ function ToolsSection({ config, onChange }: { config: PilotDeckConfig; onChange:
 
   const setField = (field: 'apiKey' | 'endpoint', value: string) => {
     const trimmed = value;
-    const nextWs: NonNullable<PilotDeckConfig['tools']>['webSearch'] = { ...ws };
+    const nextWs: NonNullable<NukemAIConfig['tools']>['webSearch'] = { ...ws };
     nextWs.provider = provider;
     if (trimmed === '') {
       delete nextWs[field];
@@ -2682,10 +2682,10 @@ function ToolsSection({ config, onChange }: { config: PilotDeckConfig; onChange:
   };
 
   const setCustomField = (
-    field: keyof NonNullable<NonNullable<PilotDeckConfig['tools']>['webSearch']>['customProvider'],
+    field: keyof NonNullable<NonNullable<NukemAIConfig['tools']>['webSearch']>['customProvider'],
     value: string,
   ) => {
-    const nextWs: NonNullable<PilotDeckConfig['tools']>['webSearch'] = {
+    const nextWs: NonNullable<NukemAIConfig['tools']>['webSearch'] = {
       ...ws,
       provider: 'custom',
       customProvider: { ...(ws.customProvider ?? {}) },
@@ -2904,7 +2904,7 @@ function ToolsSection({ config, onChange }: { config: PilotDeckConfig; onChange:
   );
 }
 
-function ModelPricingEditor({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function ModelPricingEditor({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const pricing = config.router?.stats?.modelPricing ?? {};
   const keys = Object.keys(pricing);
@@ -2994,7 +2994,7 @@ function ModelPricingEditor({ config, onChange }: { config: PilotDeckConfig; onC
   );
 }
 
-function RouterFallbackEditor({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function RouterFallbackEditor({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const fallback = config.router?.fallback ?? {};
   const entries = Object.entries(fallback);
@@ -3114,7 +3114,7 @@ const DEFAULT_RULES: string[] = [
   'Trivial greetings, confirmations, remembering rules, or reading one file and answering a short question is simple',
 ];
 
-function TokenSaverTierEditor({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function TokenSaverTierEditor({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const tiers = config.router?.tokenSaver?.tiers ?? {};
   const entries = Object.entries(tiers);
@@ -3196,7 +3196,7 @@ function TokenSaverTierEditor({ config, onChange }: { config: PilotDeckConfig; o
   );
 }
 
-function TokenSaverRulesEditor({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function TokenSaverRulesEditor({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const rules = config.router?.tokenSaver?.rules ?? [];
   const [newRule, setNewRule] = useState('');
@@ -3258,7 +3258,7 @@ function TokenSaverRulesEditor({ config, onChange }: { config: PilotDeckConfig; 
   );
 }
 
-function RouterLevelEditor({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function RouterLevelEditor({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const modelOpts = buildModelRefOptions(config);
   const defaultValue = config.router?.scenarios?.default ?? '';
@@ -3335,7 +3335,7 @@ function RouterLevelEditor({ config, onChange }: { config: PilotDeckConfig; onCh
   );
 }
 
-function RouterSection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function RouterSection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const r = config.router ?? {};
@@ -3354,13 +3354,13 @@ function RouterSection({ config, onChange }: { config: PilotDeckConfig; onChange
 
   const availableTierNames = Object.keys(ts.tiers ?? {});
 
-  const getDefaultModel = (base: PilotDeckConfig) =>
+  const getDefaultModel = (base: NukemAIConfig) =>
     (typeof base.router?.scenarios?.default === 'string' && base.router.scenarios.default.trim())
       || (typeof base.agent?.model === 'string' && base.agent.model.trim())
       || modelOpts[0]?.value
       || '';
 
-  const seedRouterDefaults = (base: PilotDeckConfig) => {
+  const seedRouterDefaults = (base: NukemAIConfig) => {
     let next = base;
     const defaultModel = getDefaultModel(next);
     next = ensureModelRefConfigured(next, defaultModel);
@@ -3673,7 +3673,7 @@ function RouterSection({ config, onChange }: { config: PilotDeckConfig; onChange
   );
 }
 
-function GatewaySection({ config, onChange }: { config: PilotDeckConfig; onChange: (next: PilotDeckConfig) => void }) {
+function GatewaySection({ config, onChange }: { config: NukemAIConfig; onChange: (next: NukemAIConfig) => void }) {
   const { t } = useTranslation('settings');
   const g = config.gateway ?? {};
   return (
@@ -3691,7 +3691,7 @@ function GatewaySection({ config, onChange }: { config: PilotDeckConfig; onChang
         </SettingsRow>
         {g.enabled && (
           <FormRow label={t('pilotDeckConfig.panels.gateway.home.label')} description={t('pilotDeckConfig.panels.gateway.home.description')}>
-            <TextInput value={g.home} placeholder="~/.pilotdeck/gateway" monospace onChange={(v) => onChange(patch(config, ['gateway', 'home'], v))} />
+            <TextInput value={g.home} placeholder="~/.nukemai/gateway" monospace onChange={(v) => onChange(patch(config, ['gateway', 'home'], v))} />
           </FormRow>
         )}
       </SettingsCard>
@@ -3786,7 +3786,7 @@ function isSectionId(value: string | undefined): value is SectionId {
 
 // ── Main tab ───────────────────────────────────────────────────────────
 
-export default function PilotDeckConfigTab({
+export default function NukemAIConfigTab({
   projects = [],
   initialSection,
 }: {
@@ -3814,7 +3814,7 @@ export default function PilotDeckConfigTab({
 	    save,
 	    reloadConfig,
 	    openFile,
-	  } = usePilotDeckConfig();
+	  } = useNukemAIConfig();
 
 	  // Active form section. Null means the config page is showing its grouped
   // navigation home, matching the outer Settings page interaction model.
@@ -3839,7 +3839,7 @@ export default function PilotDeckConfigTab({
   // single code path: server-side validation, watcher debouncing, and
   // subsystem hot-reload all work whether the edit came from the form, the
   // textarea, or an external editor.
-  const onFormChange = (next: PilotDeckConfig) => {
+  const onFormChange = (next: NukemAIConfig) => {
     try {
       setRaw(configToYamlString(next));
     } catch (caught) {
