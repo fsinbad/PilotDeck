@@ -1,5 +1,6 @@
 import express from 'express';
 import { teamDb } from '../database/db.js';
+import { logAudit } from '../middleware/auditLog.js';
 
 const router = express.Router();
 
@@ -37,6 +38,7 @@ router.post('/', (req, res) => {
     }
 
     const workspace = teamDb.createWorkspace(parsedTeamId, name.trim(), projectRoot.trim(), req.user.id);
+    logAudit(req, 'create_workspace', 'workspace', workspace.id, { name: workspace.name, teamId: parsedTeamId });
     res.status(201).json({ workspace });
   } catch (error) {
     console.error('Create workspace error:', error);
@@ -77,6 +79,7 @@ router.delete('/:id', (req, res) => {
       return res.status(403).json({ error: 'Cannot delete workspace (not found or insufficient permissions)' });
     }
 
+    logAudit(req, 'delete_workspace', 'workspace', workspaceId);
     res.json({ success: true });
   } catch (error) {
     console.error('Delete workspace error:', error);

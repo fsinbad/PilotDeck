@@ -1,5 +1,6 @@
 import express from 'express';
 import { teamDb } from '../database/db.js';
+import { logAudit } from '../middleware/auditLog.js';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Team name is required' });
     }
     const team = teamDb.createTeam(name.trim(), req.user.id);
+    logAudit(req, 'create_team', 'team', team.id, { name: team.name });
     res.status(201).json({ team });
   } catch (error) {
     console.error('Create team error:', error);
@@ -78,6 +80,7 @@ router.post('/:id/members', (req, res) => {
     }
 
     teamDb.addTeamMember(teamId, userId, memberRole);
+    logAudit(req, 'add_team_member', 'team', teamId, { userId, role: memberRole });
     res.status(201).json({ success: true });
   } catch (error) {
     console.error('Add team member error:', error);
@@ -110,6 +113,7 @@ router.delete('/:id/members/:userId', (req, res) => {
       return res.status(400).json({ error: 'Cannot remove member (owner or not found)' });
     }
 
+    logAudit(req, 'remove_team_member', 'team', teamId, { userId: targetUserId });
     res.json({ success: true });
   } catch (error) {
     console.error('Remove team member error:', error);

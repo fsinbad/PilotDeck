@@ -301,49 +301,55 @@ const runMigrations = () => {
     db.exec('CREATE INDEX IF NOT EXISTS idx_workspace_permissions_user ON workspace_permissions(user_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_workspace_permissions_workspace ON workspace_permissions(workspace_id)');
 
-    // Team workspaces tables (Phase 3)
+    // Phase 4: operations tables
     db.exec(`
-      CREATE TABLE IF NOT EXISTS teams (
+      CREATE TABLE IF NOT EXISTS audit_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        owner_id INTEGER NOT NULL,
+        user_id INTEGER,
+        action TEXT NOT NULL,
+        resource_type TEXT,
+        resource_id TEXT,
+        details TEXT,
+        ip_address TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)');
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS team_memberships (
-        team_id INTEGER NOT NULL,
+      CREATE TABLE IF NOT EXISTS token_usage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        role TEXT DEFAULT 'member',
-        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (team_id, user_id),
-        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        workspace_id INTEGER,
+        model TEXT,
+        prompt_tokens INTEGER DEFAULT 0,
+        completion_tokens INTEGER DEFAULT 0,
+        total_tokens INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_token_usage_user ON token_usage(user_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_token_usage_created ON token_usage(created_at)');
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS token_quotas (
+        user_id INTEGER PRIMARY KEY,
+        daily_limit INTEGER,
+        monthly_limit INTEGER,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 
     db.exec(`
-      CREATE TABLE IF NOT EXISTS workspaces (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        team_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        project_root TEXT NOT NULL,
-        created_by INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
-        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-      )
-    `);
-
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS workspace_permissions (
-        workspace_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        permission TEXT DEFAULT 'read',
-        PRIMARY KEY (workspace_id, user_id),
-        FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS concurrency_limits (
+        user_id INTEGER PRIMARY KEY,
+        max_concurrent_sessions INTEGER DEFAULT 3,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
@@ -1094,6 +1100,240 @@ const teamDb = {
   },
 };
 
+// Audit log database operations (Phase 4)
+const auditDb = {
+  log: ({ userId, action, resourceType, resourceId, details, ipAddress }) => {
+    try {
+      db.prepare(
+        `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, details, ip_address)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      ).run(
+        userId ?? null,
+        action,
+        resourceType ?? null,
+        resourceId != null ? String(resourceId) : null,
+        details ? (typeof details === 'string' ? details : JSON.stringify(details)) : null,
+        ipAddress ?? null
+      );
+    } catch (err) {
+      console.warn('Failed to write audit log:', err.message);
+    }
+  },
+
+  getLogs: ({ limit = 100, offset = 0, userId, action } = {}) => {
+    try {
+      const conditions = [];
+      const params = [];
+      if (userId != null) {
+        conditions.push('user_id = ?');
+        params.push(userId);
+      }
+      if (action) {
+        conditions.push('action = ?');
+        params.push(action);
+      }
+      const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const rows = db.prepare(
+        `SELECT a.*, u.username
+         FROM audit_logs a
+         LEFT JOIN users u ON a.user_id = u.id
+         ${whereClause}
+         ORDER BY a.created_at DESC
+         LIMIT ? OFFSET ?`
+      ).all(...params, limit, offset);
+      return rows;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  countLogs: ({ userId, action } = {}) => {
+    try {
+      const conditions = [];
+      const params = [];
+      if (userId != null) {
+        conditions.push('user_id = ?');
+        params.push(userId);
+      }
+      if (action) {
+        conditions.push('action = ?');
+        params.push(action);
+      }
+      const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const row = db.prepare(`SELECT COUNT(*) as count FROM audit_logs ${whereClause}`).get(...params);
+      return row?.count || 0;
+    } catch (err) {
+      throw err;
+    }
+  },
+};
+
+// Token usage database operations (Phase 4)
+const tokenUsageDb = {
+  recordUsage: ({ userId, workspaceId, model, promptTokens, completionTokens }) => {
+    try {
+      const pt = promptTokens || 0;
+      const ct = completionTokens || 0;
+      db.prepare(
+        `INSERT INTO token_usage (user_id, workspace_id, model, prompt_tokens, completion_tokens, total_tokens)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      ).run(userId, workspaceId ?? null, model ?? null, pt, ct, pt + ct);
+    } catch (err) {
+      console.warn('Failed to record token usage:', err.message);
+    }
+  },
+
+  getDailyUsage: (userId) => {
+    try {
+      const row = db.prepare(
+        `SELECT COALESCE(SUM(total_tokens), 0) as total
+         FROM token_usage
+         WHERE user_id = ? AND date(created_at) = date('now')`
+      ).get(userId);
+      return row?.total || 0;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  getMonthlyUsage: (userId) => {
+    try {
+      const row = db.prepare(
+        `SELECT COALESCE(SUM(total_tokens), 0) as total
+         FROM token_usage
+         WHERE user_id = ? AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')`
+      ).get(userId);
+      return row?.total || 0;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  getQuota: (userId) => {
+    try {
+      const row = db.prepare('SELECT * FROM token_quotas WHERE user_id = ?').get(userId);
+      return row || { user_id: userId, daily_limit: null, monthly_limit: null };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  setQuota: (userId, { dailyLimit, monthlyLimit }) => {
+    try {
+      db.prepare(
+        `INSERT INTO token_quotas (user_id, daily_limit, monthly_limit, updated_at)
+         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(user_id) DO UPDATE SET
+           daily_limit = excluded.daily_limit,
+           monthly_limit = excluded.monthly_limit,
+           updated_at = CURRENT_TIMESTAMP`
+      ).run(userId, dailyLimit ?? null, monthlyLimit ?? null);
+      return tokenUsageDb.getQuota(userId);
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  getUsageStats: ({ userId, startDate, endDate } = {}) => {
+    try {
+      const conditions = ['user_id = ?'];
+      const params = [userId];
+      if (startDate) {
+        conditions.push('date(created_at) >= date(?)');
+        params.push(startDate);
+      }
+      if (endDate) {
+        conditions.push('date(created_at) <= date(?)');
+        params.push(endDate);
+      }
+      const whereClause = `WHERE ${conditions.join(' AND ')}`;
+      const rows = db.prepare(
+        `SELECT date(created_at) as date, model,
+                SUM(prompt_tokens) as prompt_tokens,
+                SUM(completion_tokens) as completion_tokens,
+                SUM(total_tokens) as total_tokens
+         FROM token_usage
+         ${whereClause}
+         GROUP BY date(created_at), model
+         ORDER BY date(created_at) DESC`
+      ).all(...params);
+      return rows;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  getTopUsers: ({ limit = 10 } = {}) => {
+    try {
+      const rows = db.prepare(
+        `SELECT tu.user_id, u.username,
+                SUM(tu.total_tokens) as total_tokens
+         FROM token_usage tu
+         LEFT JOIN users u ON tu.user_id = u.id
+         GROUP BY tu.user_id
+         ORDER BY total_tokens DESC
+         LIMIT ?`
+      ).all(limit);
+      return rows;
+    } catch (err) {
+      throw err;
+    }
+  },
+};
+
+// Concurrency limit database operations (Phase 4)
+const concurrencyDb = {
+  getLimit: (userId) => {
+    try {
+      const row = db.prepare('SELECT * FROM concurrency_limits WHERE user_id = ?').get(userId);
+      return row || { user_id: userId, max_concurrent_sessions: 3 };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  setLimit: (userId, max) => {
+    try {
+      db.prepare(
+        `INSERT INTO concurrency_limits (user_id, max_concurrent_sessions, updated_at)
+         VALUES (?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(user_id) DO UPDATE SET
+           max_concurrent_sessions = excluded.max_concurrent_sessions,
+           updated_at = CURRENT_TIMESTAMP`
+      ).run(userId, max);
+      return concurrencyDb.getLimit(userId);
+    } catch (err) {
+      throw err;
+    }
+  },
+};
+
+// In-memory active session tracker for concurrency limiting
+const activeSessions = new Map();
+
+const activeSessionTracker = {
+  acquire: (userId, sessionKey) => {
+    if (!activeSessions.has(userId)) {
+      activeSessions.set(userId, new Set());
+    }
+    activeSessions.get(userId).add(sessionKey);
+  },
+
+  release: (userId, sessionKey) => {
+    const sessions = activeSessions.get(userId);
+    if (sessions) {
+      sessions.delete(sessionKey);
+      if (sessions.size === 0) {
+        activeSessions.delete(userId);
+      }
+    }
+  },
+
+  getActiveCount: (userId) => {
+    return activeSessions.get(userId)?.size || 0;
+  },
+};
+
 export {
   db,
   initializeDatabase,
@@ -1106,5 +1346,9 @@ export {
   applyCustomSessionNames,
   appConfigDb,
   teamDb,
-  githubTokensDb // Backward compatibility
+  githubTokensDb, // Backward compatibility
+  auditDb,
+  tokenUsageDb,
+  concurrencyDb,
+  activeSessionTracker,
 };

@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { userDb, db } from '../database/db.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
+import { logAudit } from '../middleware/auditLog.js';
 import { DISABLE_LOCAL_AUTH, DINGTALK_SSO_ENABLED } from '../constants/config.js';
 
 const router = express.Router();
@@ -125,6 +126,8 @@ router.post('/login', async (req, res) => {
     // Update last login
     userDb.updateLastLogin(user.id);
     
+    logAudit(req, 'login', 'user', user.id, { username: user.username });
+
     res.json({
       success: true,
       user: { id: user.id, username: user.username },
@@ -148,6 +151,7 @@ router.get('/user', authenticateToken, (req, res) => {
 router.post('/logout', authenticateToken, (req, res) => {
   // In a simple JWT system, logout is mainly client-side
   // This endpoint exists for consistency and potential future logging
+  logAudit(req, 'logout', 'user', req.user.id, { username: req.user.username });
   res.json({ success: true, message: 'Logged out successfully' });
 });
 

@@ -13,6 +13,7 @@ import AppShellV2 from './components/app-shell/AppShellV2';
 import TeamManagement from './components/team/TeamManagement';
 import WorkspaceList from './components/team/WorkspaceList';
 import WorkspaceSettings from './components/team/WorkspaceSettings';
+import AdminDashboard from './components/admin/AdminDashboard';
 import i18n from './i18n/config.js';
 
 export default function App() {
@@ -47,6 +48,11 @@ export default function App() {
                         <Route path="/workspaces/:id/settings" element={
                           <ProtectedRoute>
                             <WorkspaceSettings />
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/admin" element={
+                          <ProtectedRoute>
+                            <AdminDashboard />
                           </ProtectedRoute>
                         } />
                         <Route path="*" element={

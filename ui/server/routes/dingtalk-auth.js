@@ -1,6 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
-import { userDb } from '../database/db.js';
+import { userDb, auditDb } from '../database/db.js';
 import { generateToken } from '../middleware/auth.js';
 import { DINGTALK_SSO_ENABLED } from '../constants/config.js';
 
@@ -137,6 +137,16 @@ router.get('/dingtalk/callback', async (req, res) => {
 
     // Update last login time
     userDb.updateLastLogin(user.id);
+
+    // Audit log the DingTalk SSO login
+    auditDb.log({
+      userId: user.id,
+      action: 'login',
+      resourceType: 'user',
+      resourceId: String(user.id),
+      details: JSON.stringify({ method: 'dingtalk_sso', username: user.username, isNewUser }),
+      ipAddress: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || null,
+    });
 
     // Step 5: Redirect to frontend with token
     res.redirect(`/auth/callback?token=${token}&userId=${user.id}`);

@@ -60,7 +60,7 @@ import {
 } from '../../src/status/agentStatus.js';
 import { createNormalizedMessage } from './nukemai-message.js';
 import { readPermissionSettings } from './services/permissionSettings.js';
-import { teamDb } from './database/db.js';
+import { teamDb, tokenUsageDb } from './database/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1197,6 +1197,20 @@ export async function runChatViaGateway(
             if (event && event.type === 'turn_completed') {
                 sawTurnCompleted = true;
                 clearActiveRunIfCurrent(state, runId);
+                // Record token usage for quota tracking (Phase 4)
+                if (event.usage && userId) {
+                    try {
+                        tokenUsageDb.recordUsage({
+                            userId: parseInt(userId, 10),
+                            workspaceId: workspaceId ? parseInt(workspaceId, 10) : null,
+                            model: event.usage.model || event.model || null,
+                            promptTokens: event.usage.inputTokens || event.usage.promptTokens || 0,
+                            completionTokens: event.usage.outputTokens || event.usage.completionTokens || 0,
+                        });
+                    } catch (recErr) {
+                        console.warn('[nukemai-bridge] Failed to record token usage:', recErr?.message || recErr);
+                    }
+                }
             }
             const suppressDuplicateError = event?.type === 'error' && state.hasVisibleFailureStatus;
             if (!suppressDuplicateError) {

@@ -105,10 +105,12 @@ import projectsRoutes, { WORKSPACES_ROOT, validateWorkspacePath } from './routes
 import userRoutes from './routes/user.js';
 import pluginsRoutes from './routes/plugins.js';
 import messagesRoutes from './routes/messages.js';
+import auditRoutes from './routes/audit.js';
+import usageRoutes from './routes/usage.js';
 import { closeMemoryServices, startMemoryScheduler, stopMemoryScheduler } from './services/memoryService.js';
 import { createNormalizedMessage } from './nukemai-message.js';
 import { startEnabledPluginServers, stopAllPlugins, getPluginPort } from './utils/plugin-process-manager.js';
-import { initializeDatabase, sessionNamesDb, applyCustomSessionNames, userDb, teamDb } from './database/db.js';
+import { initializeDatabase, sessionNamesDb, applyCustomSessionNames, userDb, teamDb, auditDb, tokenUsageDb, concurrencyDb, activeSessionTracker } from './database/db.js';
 import { configureWebPush } from './services/vapid-keys.js';
 
 import { runServerStartupBeforeListen, startServerAfterStartup } from './services/server-startup.js';
@@ -476,6 +478,12 @@ app.use('/api/auth', dingtalkAuthRoutes);
 
 // User management routes (protected, admin-only)
 app.use('/api/users', authenticateToken, userManagementRoutes);
+
+// Audit log routes (protected, admin-only)
+app.use('/api/audit-logs', authenticateToken, auditRoutes);
+
+// Usage and quota routes (protected)
+app.use('/api/usage', authenticateToken, usageRoutes);
 
 // Team workspace routes (protected)
 app.use('/api/teams', authenticateToken, teamRoutes);
@@ -2265,7 +2273,41 @@ function handleChatConnection(ws, request) {
                 if (workspaceId) {
                     gatewayOptions.workspaceId = workspaceId;
                 }
-                await runChatViaGateway(data.command, gatewayOptions, streamWriter, providerHint);
+
+                // Concurrency limit check (Phase 4)
+                const concurrencyKey = crypto.randomUUID();
+                if (userId) {
+                    const concurrencyLimit = concurrencyDb.getLimit(userId);
+                    const maxConcurrent = concurrencyLimit?.max_concurrent_sessions ?? 3;
+                    const activeCount = activeSessionTracker.getActiveCount(userId);
+                    if (activeCount >= maxConcurrent) {
+                        streamWriter.send(createNormalizedMessage({
+                            sessionId: commandSessionId || undefined,
+                            provider: providerHint,
+                            kind: 'error',
+                            content: 'Concurrent session limit reached. Please close an existing session first.',
+                        }));
+                        return;
+                    }
+                    activeSessionTracker.acquire(userId, concurrencyKey);
+                    // Audit log the start of a chat session
+                    auditDb.log({
+                        userId,
+                        action: 'start_chat',
+                        resourceType: 'session',
+                        resourceId: commandSessionId || concurrencyKey,
+                        details: JSON.stringify({ provider: providerHint, workspaceId: workspaceId || null }),
+                        ipAddress: request?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || request?.socket?.remoteAddress || null,
+                    });
+                }
+
+                try {
+                    await runChatViaGateway(data.command, gatewayOptions, streamWriter, providerHint);
+                } finally {
+                    if (userId) {
+                        activeSessionTracker.release(userId, concurrencyKey);
+                    }
+                }
             } else if (data.type === 'abort-session') {
                 console.log('[DEBUG] Abort session request:', data.sessionId);
                 const provider = data.provider || 'nukemai';

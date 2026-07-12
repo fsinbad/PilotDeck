@@ -1,5 +1,6 @@
 import express from 'express';
 import { userDb } from '../database/db.js';
+import { logAudit } from '../middleware/auditLog.js';
 
 const router = express.Router();
 
@@ -56,6 +57,7 @@ router.patch('/:id/status', (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    logAudit(req, 'update_user_status', 'user', userId, { is_active });
     res.json({ success: true });
   } catch (error) {
     console.error('Update user status error:', error);
@@ -81,6 +83,7 @@ router.delete('/:id', (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    logAudit(req, 'delete_user', 'user', userId);
     res.json({ success: true });
   } catch (error) {
     console.error('Delete user error:', error);

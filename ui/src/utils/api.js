@@ -473,6 +473,38 @@ export const api = {
       }),
   },
 
+  // Admin user management
+  users: {
+    list: () => authenticatedFetch('/api/users'),
+    updateStatus: (userId, isActive) => authenticatedFetch(`/api/users/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active: isActive }),
+    }),
+    delete: (userId) => authenticatedFetch(`/api/users/${userId}`, { method: 'DELETE' }),
+  },
+
+  // Audit log endpoints (admin)
+  audit: {
+    logs: (params = {}) => authenticatedFetch(`/api/audit-logs?${new URLSearchParams(params)}`),
+  },
+
+  // Token usage & quota endpoints
+  usage: {
+    current: () => authenticatedFetch('/api/usage'),
+    history: (params = {}) => authenticatedFetch(`/api/usage/history?${new URLSearchParams(params)}`),
+    topUsers: (limit = 10) => authenticatedFetch(`/api/usage/top-users?limit=${limit}`),
+    userUsage: (userId) => authenticatedFetch(`/api/usage/users/${userId}/usage`),
+    setQuota: (userId, quotas) => authenticatedFetch(`/api/usage/users/${userId}/quota`, {
+      method: 'PUT',
+      body: JSON.stringify(quotas),
+    }),
+    setConcurrency: (userId, max) => authenticatedFetch(`/api/usage/users/${userId}/concurrency`, {
+      method: 'PUT',
+      body: JSON.stringify({ maxConcurrentSessions: max }),
+    }),
+    getConcurrency: (userId) => authenticatedFetch(`/api/usage/users/${userId}/concurrency`),
+  },
+
   // Generic GET method for any endpoint
   get: (endpoint) => authenticatedFetch(`/api${endpoint}`),
 
