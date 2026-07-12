@@ -35,8 +35,7 @@ import {
   setSessionCustomTitle,
   useCustomNamesVersion,
 } from '../../lib/customNames';
-import nukemaiLogoDark from '../../assets/nukemai-wordmark-dark.png';
-import nukemaiLogoLight from '../../assets/nukemai-wordmark-light.png';
+import nukemLogo from '/nukem-logo.svg';
 import TeamSwitcher from '../team/TeamSwitcher';
 
 const asTimestamp = (value: unknown): number => {
@@ -1040,15 +1039,9 @@ export default function SidebarV2({
             className="flex min-w-0 shrink items-center gap-2 rounded-md p-1 transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700"
           >
             <img
-              src={nukemaiLogoLight}
+              src={nukemLogo}
               alt="NukemAI"
-              className="h-7 w-auto max-w-[150px] select-none object-contain dark:hidden"
-              draggable={false}
-            />
-            <img
-              src={nukemaiLogoDark}
-              alt="NukemAI"
-              className="hidden h-7 w-auto max-w-[150px] select-none object-contain dark:block"
+              className="h-8 w-auto max-w-[160px] select-none object-contain"
               draggable={false}
             />
           </button>
