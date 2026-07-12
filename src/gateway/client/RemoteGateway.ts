@@ -69,7 +69,7 @@ export class RemoteGateway implements Gateway {
     return this.client.stream("submit_turn", input);
   }
 
-  async abortTurn(input: { sessionKey: string; runId?: string; reason?: string }): Promise<void> {
+  async abortTurn(input: { sessionKey: string; runId?: string; reason?: string; userId?: string }): Promise<void> {
     await this.client.request("abort_turn", input);
   }
 
@@ -85,7 +85,7 @@ export class RemoteGateway implements Gateway {
     return (await this.client.request("new_session", input)) as { sessionKey: string };
   }
 
-  async closeSession(input: { sessionKey: string; reason?: string }): Promise<void> {
+  async closeSession(input: { sessionKey: string; reason?: string; userId?: string }): Promise<void> {
     await this.client.request("close_session", input);
   }
 

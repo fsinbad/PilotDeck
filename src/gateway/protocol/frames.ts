@@ -8,6 +8,7 @@ export type WsHelloFrame = {
   clientName: GatewayWsClientName;
   clientVersion: string;
   token: string;
+  userId?: string;
 };
 
 export type WsHelloOk = {

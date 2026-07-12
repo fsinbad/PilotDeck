@@ -7,6 +7,7 @@ export type AgentProjectSessionStorageOptions = {
   pilotHome: string;
   sessionId: string;
   now?: () => Date;
+  userId?: string;
 };
 
 export type AgentProjectSessionStorage = {
@@ -55,7 +56,7 @@ export function sanitizeSessionIdForPath(sessionId: string): string {
 export function createAgentProjectSessionStorage(
   options: AgentProjectSessionStorageOptions,
 ): AgentProjectSessionStorage {
-  const chatDir = getPilotProjectChatDir(options.projectRoot, options.pilotHome);
+  const chatDir = getPilotProjectChatDir(options.projectRoot, options.pilotHome, options.userId);
   const safeId = sanitizeSessionIdForPath(options.sessionId);
   const transcriptPath = resolve(chatDir, `${safeId}.jsonl`);
   // Keep large tool-result bodies inside the workspace so the agent can read

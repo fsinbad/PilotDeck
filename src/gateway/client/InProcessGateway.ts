@@ -370,6 +370,7 @@ export class InProcessGateway implements Gateway {
           sessionKey: input.sessionKey,
           projectKey: input.projectKey,
           channelKey: input.channelKey,
+          userId: input.userId,
         });
         if (input.timeoutMs !== undefined && Number.isFinite(input.timeoutMs) && input.timeoutMs > 0) {
           timeoutHandle = setTimeout(() => {
@@ -540,11 +541,11 @@ export class InProcessGateway implements Gateway {
       this.activeTurnReplays.delete(input.sessionKey);
       this.elicitationBus.rejectSession(input.sessionKey, "turn_ended");
       this.permissionBus.rejectSession(input.sessionKey, "turn_ended");
-      this.router.endTurn(input.sessionKey, runId);
+      this.router.endTurn(input.sessionKey, runId, input.userId);
       if (timedOut) {
         // The timed-out AgentSession is never safe to reuse. Do not await a
         // misbehaving tool here: the hard timeout must release the Cron run.
-        await this.router.close(input.sessionKey);
+        await this.router.close(input.sessionKey, input.userId);
         void pump.catch(() => undefined);
       } else {
         // Defensive — make sure the pump promise is settled before we resolve.
@@ -566,9 +567,9 @@ export class InProcessGateway implements Gateway {
     }
   }
 
-  async abortTurn(input: { sessionKey: string; runId?: string; reason?: string }): Promise<void> {
+  async abortTurn(input: { sessionKey: string; runId?: string; reason?: string; userId?: string }): Promise<void> {
     const reason = input.reason ?? (input.runId ? `aborted:${input.runId}` : "aborted");
-    await this.router.abort(input.sessionKey, reason);
+    await this.router.abort(input.sessionKey, reason, input.userId);
     // Wait for the in-flight `submitTurn` (if any) to fully unwind so
     // `inFlightTurns` has been cleared by the time the RPC response is
     // sent. Otherwise a fast "stop → re-send" from a client races the
@@ -590,11 +591,12 @@ export class InProcessGateway implements Gateway {
   async newSession(input: NewSessionInput): Promise<{ sessionKey: string }> {
     const suffix = this.uuid();
     const projectKey = input.projectKey ? `project=${input.projectKey}:` : "";
-    return { sessionKey: `${input.channelKey}:${projectKey}s_${suffix}` };
+    const userPart = `u=${input.userId ?? "default"}:`;
+    return { sessionKey: `${input.channelKey}:${userPart}${projectKey}s_${suffix}` };
   }
 
-  async closeSession(input: { sessionKey: string; reason?: string }): Promise<void> {
-    await this.router.close(input.sessionKey);
+  async closeSession(input: { sessionKey: string; reason?: string; userId?: string }): Promise<void> {
+    await this.router.close(input.sessionKey, input.userId);
     this.sessionPermissionGrants.delete(input.sessionKey);
   }
 

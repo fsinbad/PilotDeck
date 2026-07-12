@@ -2240,7 +2240,8 @@ function handleChatConnection(ws, request) {
                     }
                 }
                 const providerHint = data.options?.providerHint || data.type.replace('-command', '');
-                await runChatViaGateway(data.command, data.options, streamWriter, providerHint);
+                const gatewayOptions = { ...data.options, userId: userId?.toString() };
+                await runChatViaGateway(data.command, gatewayOptions, streamWriter, providerHint);
             } else if (data.type === 'abort-session') {
                 console.log('[DEBUG] Abort session request:', data.sessionId);
                 const provider = data.provider || 'nukemai';

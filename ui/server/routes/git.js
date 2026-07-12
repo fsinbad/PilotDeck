@@ -983,6 +983,7 @@ Generate the commit message:`;
         projectPath,
         permissionMode: 'bypassPermissions',
         model: provider === 'cursor' ? undefined : 'sonnet',
+        userId: req.user?.id?.toString(),
       },
       writer,
       provider || 'nukemai',

@@ -12,6 +12,7 @@ export type GatewayWsConnectionOptions = {
 
 export class GatewayWsConnection {
   private authed = false;
+  private userId?: string;
   private readonly inFlightSessions = new Set<string>();
 
   constructor(
@@ -75,6 +76,7 @@ export class GatewayWsConnection {
       return;
     }
     this.authed = true;
+    this.userId = (frame as WsHelloFrame).userId;
     this.ws.sendText(
       JSON.stringify({
         type: "hello_ok",
@@ -90,10 +92,13 @@ export class GatewayWsConnection {
       if (frame.method === "submit_turn") {
         const sessionKey = (frame.params as { sessionKey?: string } | undefined)?.sessionKey;
         if (sessionKey) this.inFlightSessions.add(sessionKey);
+        const params = this.userId !== undefined
+          ? { ...(frame.params as Record<string, unknown>), userId: this.userId }
+          : frame.params;
         let seq = 0;
         let lastCompleted: GatewayEvent | undefined;
         try {
-          for await (const event of this.options.gateway.submitTurn(frame.params as never)) {
+          for await (const event of this.options.gateway.submitTurn(params as never)) {
             if (event.type === "turn_completed") {
               lastCompleted = event;
             }
@@ -170,7 +175,7 @@ export class GatewayWsConnection {
   private dispatchRequest(frame: WsRequestFrame): Promise<unknown> {
     switch (frame.method) {
       case "abort_turn":
-        return this.options.gateway.abortTurn(frame.params as never).then(() => ({ ok: true }));
+        return this.options.gateway.abortTurn({ ...(frame.params as Record<string, unknown>), userId: this.userId } as never).then(() => ({ ok: true }));
       case "list_sessions":
         return this.options.gateway.listSessions(frame.params as never);
       case "resume_session":
@@ -178,7 +183,7 @@ export class GatewayWsConnection {
       case "new_session":
         return this.options.gateway.newSession(frame.params as never);
       case "close_session":
-        return this.options.gateway.closeSession(frame.params as never).then(() => ({ ok: true }));
+        return this.options.gateway.closeSession({ ...(frame.params as Record<string, unknown>), userId: this.userId } as never).then(() => ({ ok: true }));
       case "record_agent_status_message":
         if (this.options.gateway.recordAgentStatusMessage) {
           return this.options.gateway.recordAgentStatusMessage(frame.params as never);

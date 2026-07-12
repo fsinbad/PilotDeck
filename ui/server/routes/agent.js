@@ -942,6 +942,7 @@ router.post('/', validateExternalApiKey, async (req, res) => {
         sessionId: sessionId || null,
         model,
         permissionMode: 'bypassPermissions',
+        userId: req.user?.id?.toString(),
       },
       writer,
       provider,

@@ -33,9 +33,21 @@ export function getPilotMemoryRootDir(pilotHome: string): string {
   return resolve(pilotHome, "memory");
 }
 
-export function getPilotProjectChatDir(projectRoot: string, pilotHome: string): string {
-  const projectId = resolveProjectStorageId(projectRoot, pilotHome);
-  return resolve(pilotHome, "projects", projectId, "chats");
+/**
+ * Resolve a per-user Pilot home directory. When `userId` is provided,
+ * sessions and project data are isolated under `${pilotHome}/users/${userId}`.
+ * When `userId` is undefined (single-user mode), `pilotHome` is returned
+ * unchanged so existing on-disk paths are unaffected.
+ */
+export function resolveUserPilotHome(pilotHome: string, userId?: string): string {
+  if (!userId) return pilotHome;
+  return resolve(pilotHome, "users", userId);
+}
+
+export function getPilotProjectChatDir(projectRoot: string, pilotHome: string, userId?: string): string {
+  const effectiveHome = resolveUserPilotHome(pilotHome, userId);
+  const projectId = resolveProjectStorageId(projectRoot, effectiveHome);
+  return resolve(effectiveHome, "projects", projectId, "chats");
 }
 
 /**

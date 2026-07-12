@@ -35,8 +35,9 @@ export type GatewayServer = {
 
 export async function startGatewayServer(options: GatewayServerOptions): Promise<GatewayServer> {
   const host = options.host ?? "127.0.0.1";
-  if (host !== "127.0.0.1" && host !== "localhost") {
-    throw new Error("GatewayServer only supports localhost binding in the first phase.");
+  const allowRemote = process.env.NUKEMAI_GATEWAY_ALLOW_REMOTE !== undefined;
+  if (!allowRemote && host !== "127.0.0.1" && host !== "localhost") {
+    throw new Error("GatewayServer only supports localhost binding unless NUKEMAI_GATEWAY_ALLOW_REMOTE is set.");
   }
   const auth = options.token
     ? { token: options.token, tokenPath: undefined }

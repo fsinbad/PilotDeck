@@ -590,13 +590,18 @@ class ProjectRuntimeRegistry {
     this.sessionMcpRuntimes.clear();
 
     if (projectRoot) {
-      const runtime = this.runtimes.get(projectRoot);
-      if (runtime?.mcpRuntime) {
-        runtime.mcpRuntime.stop().catch(() => {});
+      // Cache keys are namespaced per user: `${userId}:${projectRoot}` or
+      // just `projectRoot` in single-user mode. Invalidate all users'
+      // runtimes for this project.
+      for (const [key, runtime] of this.runtimes) {
+        if (key !== projectRoot && !key.endsWith(`:${projectRoot}`)) continue;
+        if (runtime.mcpRuntime) {
+          runtime.mcpRuntime.stop().catch(() => {});
+        }
+        runtime.memoryService?.close();
+        runtime.router?.shutdown().catch(() => {});
+        this.runtimes.delete(key);
       }
-      runtime?.memoryService?.close();
-      runtime?.router?.shutdown().catch(() => {});
-      this.runtimes.delete(projectRoot);
     } else {
       for (const [, runtime] of this.runtimes) {
         if (runtime.mcpRuntime) {
@@ -636,10 +641,11 @@ class ProjectRuntimeRegistry {
     this._sessionOverrides.set(sessionKey, { ...existing, cwd });
   }
 
-  resolve(projectKey?: string): ProjectRuntime {
+  resolve(projectKey?: string, userId?: string): ProjectRuntime {
     const projectRoot = resolve(projectKey ?? this.options.fallbackProjectRoot);
     this.options.onProjectActivated?.(projectRoot);
-    const cached = this.runtimes.get(projectRoot);
+    const cacheKey = userId ? `${userId}:${projectRoot}` : projectRoot;
+    const cached = this.runtimes.get(cacheKey);
     if (cached) {
       return cached;
     }
@@ -718,9 +724,10 @@ class ProjectRuntimeRegistry {
       projectStorage: {
         projectRoot,
         pilotHome: this.options.pilotHome,
+        userId,
       },
     };
-    this.runtimes.set(projectRoot, runtime);
+    this.runtimes.set(cacheKey, runtime);
     return runtime;
   }
 
@@ -859,7 +866,7 @@ class ProjectRuntimeRegistry {
   }
 
   private async prepareSessionRuntime(context: GatewaySessionContext) {
-    const runtime = this.resolve(context.projectKey);
+    const runtime = this.resolve(context.projectKey, context.userId);
     await runtime.pluginRuntime.refresh();
     await this.ensureMcpReady(runtime);
     const contributions = runtime.pluginRuntime.snapshotContributions();

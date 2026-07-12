@@ -33,6 +33,7 @@ export type GatewayWsClientOptions = {
   clientName?: GatewayWsClientName;
   clientVersion?: string;
   protocolVersion?: string;
+  userId?: string;
 };
 
 type PendingRequest = {
@@ -66,6 +67,7 @@ export class GatewayWsClient {
         clientName: this.options.clientName ?? "cli",
         clientVersion: this.options.clientVersion ?? "0.1.0",
         token: this.options.token,
+        userId: this.options.userId,
       }),
     );
 

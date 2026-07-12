@@ -272,23 +272,25 @@ function isNukemAISessionKey(value) {
     return false;
 }
 
-function newSessionKey() {
+function newSessionKey(userId) {
     // On Windows, colons are illegal in filenames. The on-disk session file
     // is named after the key via sanitizeSessionIdForPath which replaces ':'
     // with '-'. Using '-' from the start avoids a mismatch between the key
     // the frontend holds (from session_created) and the key the session
     // listing returns (from the filename).
     const sep = process.platform === 'win32' ? '-' : ':';
-    return `web${sep}s_${randomUUID()}`;
+    const userPart = `u_${userId ?? 'default'}`;
+    return `web${sep}${userPart}${sep}s_${randomUUID()}`;
 }
 
-function ensureSessionState(sessionKey, projectKey, channelKey) {
+function ensureSessionState(sessionKey, projectKey, channelKey, userId) {
     let state = sessionState.get(sessionKey);
     if (!state) {
         state = {
             sessionKey,
             projectKey,
             channelKey,
+            userId,
             runId: undefined,
             active: false,
             tokenBudget: null,
@@ -298,6 +300,7 @@ function ensureSessionState(sessionKey, projectKey, channelKey) {
     } else {
         state.projectKey = projectKey;
         state.channelKey = channelKey;
+        state.userId = userId;
     }
     return state;
 }
@@ -1022,12 +1025,13 @@ export async function runChatViaGateway(
 ) {
     const projectKey = options.projectPath || options.cwd || GENERAL_HOME;
     const channelKey = 'web';
+    const userId = options.userId;
 
     const incoming = options.sessionId || options.sessionKey;
-    const sessionKey = isNukemAISessionKey(incoming) ? incoming : newSessionKey();
+    const sessionKey = isNukemAISessionKey(incoming) ? incoming : newSessionKey(userId);
     const isNewSession = sessionKey !== incoming;
 
-    const state = ensureSessionState(sessionKey, projectKey, channelKey);
+    const state = ensureSessionState(sessionKey, projectKey, channelKey, userId);
     const staleRunId = state.active ? state.runId : undefined;
 
 
@@ -1100,6 +1104,7 @@ export async function runChatViaGateway(
             runMode,
             mode: resolvedMode,
             runId,
+            ...(userId ? { userId } : {}),
             ...(options?.thinking ? { thinking: options.thinking } : {}),
             ...(basePermissionMode ? { basePermissionMode } : {}),
             ...(attachments.length > 0 ? { attachments } : {}),

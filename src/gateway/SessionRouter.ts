@@ -5,6 +5,7 @@ export type GatewaySessionContext = {
   sessionKey: string;
   projectKey?: string;
   channelKey: string;
+  userId?: string;
 };
 
 export type GatewaySessionFactory = (context: GatewaySessionContext) => AgentSession | Promise<AgentSession>;
@@ -67,7 +68,10 @@ export class SessionRouter {
 
   async getOrCreate(context: GatewaySessionContext): Promise<AgentSession> {
     this.sweepIdle();
-    const cached = this.sessions.get(context.sessionKey);
+    const mapKey = context.userId
+      ? `${context.userId}:${context.sessionKey}`
+      : context.sessionKey;
+    const cached = this.sessions.get(mapKey);
     if (cached) {
       cached.context = mergeSessionContext(cached.context, context);
       if (cached.dirtyReason && this.options.recreateSession) {
@@ -80,7 +84,7 @@ export class SessionRouter {
     }
 
     const session = await this.options.createSession(context);
-    this.sessions.set(context.sessionKey, {
+    this.sessions.set(mapKey, {
       session,
       lastUsedAt: this.nowMs(),
       context,
@@ -97,8 +101,9 @@ export class SessionRouter {
     return true;
   }
 
-  endTurn(sessionKey: string, runId?: string): void {
-    const record = this.sessions.get(sessionKey);
+  endTurn(sessionKey: string, runId?: string, userId?: string): void {
+    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+    const record = this.sessions.get(mapKey);
     const inFlightRunId = this.inFlightTurns.get(sessionKey);
     if (!runId || inFlightRunId === runId) {
       this.inFlightTurns.delete(sessionKey);
@@ -108,17 +113,19 @@ export class SessionRouter {
     }
   }
 
-  async abort(sessionKey: string, reason?: string): Promise<void> {
-    const record = this.sessions.get(sessionKey);
+  async abort(sessionKey: string, reason?: string, userId?: string): Promise<void> {
+    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+    const record = this.sessions.get(mapKey);
     record?.session.abort(reason);
     if (record) {
       record.lastUsedAt = this.nowMs();
     }
   }
 
-  async close(sessionKey: string): Promise<void> {
-    const record = this.sessions.get(sessionKey);
-    if (record && this.sessions.delete(sessionKey)) {
+  async close(sessionKey: string, userId?: string): Promise<void> {
+    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+    const record = this.sessions.get(mapKey);
+    if (record && this.sessions.delete(mapKey)) {
       this.emitSessionEvict(sessionKey, record, "closed");
     }
   }
@@ -132,10 +139,13 @@ export class SessionRouter {
     return count;
   }
 
-  markProjectDirty(projectKey: string, reason = "runtime_changed"): number {
+  markProjectDirty(projectKey: string, reason = "runtime_changed", userId?: string): number {
     let count = 0;
     for (const record of this.sessions.values()) {
       if (record.context.projectKey !== projectKey) {
+        continue;
+      }
+      if (userId !== undefined && record.context.userId !== userId) {
         continue;
       }
       record.dirtyReason = reason;
@@ -150,15 +160,15 @@ export class SessionRouter {
     }
 
     return {
-      sessions: [...this.sessions.entries()].map(([sessionKey, record]): GatewaySessionInfo => {
+      sessions: [...this.sessions.entries()].map(([, record]): GatewaySessionInfo => {
         const snapshot = record.session.snapshot();
         return {
           sessionId: snapshot.sessionId,
-          sessionKey,
+          sessionKey: record.context.sessionKey,
           summary: snapshot.messages
             .flatMap((message) => message.content)
             .find((block) => block.type === "text")
-            ?.text ?? sessionKey,
+            ?.text ?? record.context.sessionKey,
           lastModified: record.lastUsedAt,
         };
       }),
@@ -174,8 +184,9 @@ export class SessionRouter {
     return this.sessions.size;
   }
 
-  snapshotSession(sessionKey: string): ReturnType<AgentSession["snapshot"]> | undefined {
-    return this.sessions.get(sessionKey)?.session.snapshot();
+  snapshotSession(sessionKey: string, userId?: string): ReturnType<AgentSession["snapshot"]> | undefined {
+    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+    return this.sessions.get(mapKey)?.session.snapshot();
   }
 
   shutdown(): void {
@@ -184,8 +195,8 @@ export class SessionRouter {
     if (this.idleSweepTimer) {
       clearInterval(this.idleSweepTimer);
     }
-    for (const [sessionKey, record] of this.sessions) {
-      this.emitSessionEvict(sessionKey, record, "shutdown");
+    for (const [, record] of this.sessions) {
+      this.emitSessionEvict(record.context.sessionKey, record, "shutdown");
     }
     this.sessions.clear();
     this.inFlightTurns.clear();
@@ -196,12 +207,15 @@ export class SessionRouter {
    * in flight for the given project.  Used by the Always-On scheduler to
    * implement the `agent_busy` gate.
    */
-  hasActiveUserTurn(projectKey: string): boolean {
-    for (const [sessionKey] of this.inFlightTurns) {
+  hasActiveUserTurn(projectKey: string, userId?: string): boolean {
+    for (const record of this.sessions.values()) {
+      const sessionKey = record.context.sessionKey;
+      if (!this.inFlightTurns.has(sessionKey)) continue;
       if (sessionKey.startsWith("always-on/")) continue;
       if (sessionKey.startsWith("cron:")) continue;
-      const record = this.sessions.get(sessionKey);
-      if (record?.context.projectKey === projectKey) return true;
+      if (record.context.projectKey !== projectKey) continue;
+      if (userId !== undefined && record.context.userId !== userId) continue;
+      return true;
     }
     return false;
   }
@@ -209,13 +223,13 @@ export class SessionRouter {
   private sweepIdle(): void {
     if (this.isShutdown) return;
     const now = this.nowMs();
-    for (const [sessionKey, record] of this.sessions) {
-      if (this.inFlightTurns.has(sessionKey)) {
+    for (const [mapKey, record] of this.sessions) {
+      if (this.inFlightTurns.has(record.context.sessionKey)) {
         continue;
       }
       if (now - record.lastUsedAt > this.idleSessionTimeoutMs) {
-        this.sessions.delete(sessionKey);
-        this.emitSessionEvict(sessionKey, record, "idle");
+        this.sessions.delete(mapKey);
+        this.emitSessionEvict(record.context.sessionKey, record, "idle");
       }
     }
   }
@@ -259,5 +273,6 @@ function mergeSessionContext(
     sessionKey: next.sessionKey,
     channelKey: next.channelKey || current.channelKey,
     projectKey: current.projectKey ?? next.projectKey,
+    userId: next.userId ?? current.userId,
   };
 }
