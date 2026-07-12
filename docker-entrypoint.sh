@@ -80,7 +80,29 @@ if [ ! -f "$CONFIG_FILE" ]; then
 
   if [ "$PROVIDER" = "$LIGHT_PROVIDER" ]; then
     # Same provider for both models
-    cat > "$CONFIG_FILE" <<YAML
+    if [ "$MODEL_ID" = "$LIGHT_MODEL_ID" ]; then
+      # Same model for both main and light - only declare once
+      cat > "$CONFIG_FILE" <<YAML
+schemaVersion: 1
+agent:
+  model: ${MODEL}
+model:
+  providers:
+    ${PROVIDER}:
+      protocol: openai
+      url: ${API_URL}
+      apiKey: ${API_KEY}
+      models:
+        ${MODEL_ID}:
+          capabilities:
+            maxOutputTokens: 32768
+cron:
+  enabled: true
+${ROUTER_SECTION}
+YAML
+    else
+      # Different models, same provider
+      cat > "$CONFIG_FILE" <<YAML
 schemaVersion: 1
 agent:
   model: ${MODEL}
@@ -101,6 +123,7 @@ cron:
   enabled: true
 ${ROUTER_SECTION}
 YAML
+    fi
   else
     # Different providers — declare both
     LIGHT_API_URL="${NUKEMAI_LIGHT_API_URL:-${API_URL}}"

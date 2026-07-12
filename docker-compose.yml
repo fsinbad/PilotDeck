@@ -18,17 +18,19 @@ services:
       - PILOT_HOME=/root/.nukemai
       - SERVER_PORT=3001
       - NUKEMAI_GATEWAY_PORT=18789
+      # ── Model configuration (passed through from shell or .env file) ──
+      - NUKEMAI_MODEL=${NUKEMAI_MODEL:-}
+      - NUKEMAI_API_KEY=${NUKEMAI_API_KEY:-}
+      - NUKEMAI_API_URL=${NUKEMAI_API_URL:-}
+      - NUKEMAI_LIGHT_MODEL=${NUKEMAI_LIGHT_MODEL:-}
+      - NUKEMAI_LIGHT_API_KEY=${NUKEMAI_LIGHT_API_KEY:-}
+      - NUKEMAI_LIGHT_API_URL=${NUKEMAI_LIGHT_API_URL:-}
       # ── Authentication (uncomment to require login) ──
       # - NUKEMAI_DISABLE_LOCAL_AUTH=0
       #
       # ── Proxy (uncomment if behind corporate proxy) ──
       # - https_proxy=http://host.docker.internal:7890
       # - NUKEMAI_PROXY=http://host.docker.internal:7890
-      #
-      # ── Or configure via env vars instead of mounting yaml ──
-      # - NUKEMAI_MODEL=openai/gpt-4.1
-      # - NUKEMAI_API_KEY=sk-xxx
-      # - NUKEMAI_API_URL=https://api.openai.com/v1
     restart: unless-stopped
 
 volumes:
