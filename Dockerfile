@@ -3,6 +3,10 @@ FROM node:22-bookworm AS builder
 
 WORKDIR /build
 
+# Use Aliyun mirror for faster apt in China (HTTP because slim image lacks ca-certificates)
+RUN sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true
+
 # System deps for native modules (node-pty, sharp, bcrypt, better-sqlite3)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ git \
@@ -22,7 +26,7 @@ COPY ui/scripts/ ui/scripts/
 # before the lockfile/workspace config is updated.
 RUN npm install -g pnpm@10.32.1 \
     && pnpm --version \
-    && HUSKY=0 pnpm install --frozen-lockfile
+    && HUSKY=0 pnpm install --frozen-lockfile --registry=https://registry.npmmirror.com
 
 # Copy all source files
 COPY src/ src/
@@ -44,6 +48,10 @@ RUN cd ui && npm run build
 FROM node:22-bookworm-slim
 
 WORKDIR /app
+
+# Use Aliyun mirror for faster apt in China (HTTP because slim image lacks ca-certificates)
+RUN sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true
 
 # Runtime system dependencies + tsx/concurrently for process management
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -67,14 +75,14 @@ COPY --from=builder /build/ui/scripts/ ui/scripts/
 COPY --from=builder /build/ui/shared/ ui/shared/
 COPY --from=builder /build/ui/vite.config.js ui/vite.config.js
 
-# Create PilotDeck state/workspace directories used by the gateway, UI server,
+# Create NukemAI state/workspace directories used by the gateway, UI server,
 # permissions, skills/plugins, memory, auth, and router stats.
 RUN mkdir -p \
-    /root/.pilotdeck/projects \
-    /root/.pilotdeck/router \
-    /root/.pilotdeck/skills \
-    /root/.pilotdeck/plugins \
-    /root/.pilotdeck/memory \
+    /root/.nukemai/projects \
+    /root/.nukemai/router \
+    /root/.nukemai/skills \
+    /root/.nukemai/plugins \
+    /root/.nukemai/memory \
     /workspace
 
 # Entrypoint
@@ -82,10 +90,10 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 ENV NODE_ENV=production
-ENV PILOT_HOME=/root/.pilotdeck
+ENV PILOT_HOME=/root/.nukemai
 ENV HOST=0.0.0.0
 ENV SERVER_PORT=3001
-ENV PILOTDECK_GATEWAY_PORT=18789
+ENV NUKEMAI_GATEWAY_PORT=18789
 
 EXPOSE 3001
 
