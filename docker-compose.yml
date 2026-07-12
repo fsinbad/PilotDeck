@@ -25,8 +25,11 @@ services:
       - NUKEMAI_LIGHT_MODEL=${NUKEMAI_LIGHT_MODEL:-}
       - NUKEMAI_LIGHT_API_KEY=${NUKEMAI_LIGHT_API_KEY:-}
       - NUKEMAI_LIGHT_API_URL=${NUKEMAI_LIGHT_API_URL:-}
-      # ── Authentication (uncomment to require login) ──
-      # - NUKEMAI_DISABLE_LOCAL_AUTH=0
+      # ── Authentication: DingTalk SSO ──
+      - NUKEMAI_DISABLE_LOCAL_AUTH=0
+      - DINGTALK_APP_KEY=${DINGTALK_APP_KEY:-}
+      - DINGTALK_APP_SECRET=${DINGTALK_APP_SECRET:-}
+      - DINGTALK_REDIRECT_URI=${DINGTALK_REDIRECT_URI:-}
       #
       # ── Proxy (uncomment if behind corporate proxy) ──
       # - https_proxy=http://host.docker.internal:7890

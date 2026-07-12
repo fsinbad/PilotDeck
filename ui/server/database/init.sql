@@ -1,17 +1,21 @@
 -- Initialize authentication database
 PRAGMA foreign_keys = ON;
 
--- Users table (single user system)
+-- Users table (multi-user system)
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login DATETIME,
     is_active BOOLEAN DEFAULT 1,
     git_name TEXT,
     git_email TEXT,
-    has_completed_onboarding BOOLEAN DEFAULT 0
+    has_completed_onboarding BOOLEAN DEFAULT 0,
+    dingtalk_union_id TEXT UNIQUE,
+    dingtalk_nick TEXT,
+    dingtalk_avatar TEXT,
+    role TEXT DEFAULT 'member'
 );
 
 -- Indexes for performance
@@ -84,9 +88,11 @@ CREATE TABLE IF NOT EXISTS session_names (
     session_id TEXT NOT NULL,
     provider TEXT NOT NULL DEFAULT 'claude',
     custom_name TEXT NOT NULL,
+    user_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(session_id, provider)
+    UNIQUE(session_id, provider, user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_session_names_lookup ON session_names(session_id, provider);

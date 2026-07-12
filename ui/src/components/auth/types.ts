@@ -43,6 +43,7 @@ export type AuthContextValue = {
   login: (username: string, password: string) => Promise<AuthActionResult>;
   register: (username: string, password: string) => Promise<AuthActionResult>;
   logout: () => void;
+  dingTalkLogin: () => void;
   refreshOnboardingStatus: () => Promise<void>;
 };
 

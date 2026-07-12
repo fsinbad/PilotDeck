@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DINGTALK_SSO_ENABLED } from '../../../constants/config';
 import { useAuth } from '../context/AuthContext';
 import AuthErrorAlert from './AuthErrorAlert';
 import AuthInputField from './AuthInputField';
 import AuthScreenLayout from './AuthScreenLayout';
+import DingTalkLoginButton from './DingTalkLoginButton';
 
 type LoginFormState = {
   username: string;
@@ -20,6 +22,9 @@ const initialState: LoginFormState = {
  * Login form component.
  * Handles credential input with browser autofill support (`autocomplete`
  * attributes) so that password managers can offer to fill saved credentials.
+ *
+ * When DingTalk SSO is enabled, the username/password form is replaced with
+ * a single DingTalk login button.
  */
 export default function LoginForm() {
   const { t } = useTranslation('auth');
@@ -32,6 +37,19 @@ export default function LoginForm() {
   const updateField = useCallback((field: keyof LoginFormState, value: string) => {
     setFormState((previous) => ({ ...previous, [field]: value }));
   }, []);
+
+  // When DingTalk SSO is enabled, show only the SSO button.
+  if (DINGTALK_SSO_ENABLED) {
+    return (
+      <AuthScreenLayout
+        title={t('login.title')}
+        description={t('login.description')}
+        footerText="Sign in with DingTalk to access NukemAI"
+      >
+        <DingTalkLoginButton />
+      </AuthScreenLayout>
+    );
+  }
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {

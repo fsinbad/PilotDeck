@@ -197,6 +197,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [clearSession, token]);
 
+  const dingTalkLogin = useCallback(() => {
+    window.location.href = '/api/auth/dingtalk';
+  }, []);
+
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -208,6 +212,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       login,
       register,
       logout,
+      dingTalkLogin,
       refreshOnboardingStatus,
     }),
     [
@@ -216,6 +221,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isLoading,
       login,
       logout,
+      dingTalkLogin,
       needsSetup,
       refreshOnboardingStatus,
       register,

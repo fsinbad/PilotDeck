@@ -32,9 +32,13 @@ export default defineConfig(({ mode }) => {
     env.NUKEMAI_DISABLE_LOCAL_AUTH !== '0' &&
     env.NUKEMAI_DISABLE_LOCAL_AUTH !== 'false'
 
+  const dingtalkSsoEnabled =
+    Boolean(env.DINGTALK_APP_KEY) && Boolean(env.DINGTALK_APP_SECRET)
+
   return {
     define: {
       'import.meta.env.VITE_DISABLE_LOCAL_AUTH': JSON.stringify(disableLocalAuth ? 'true' : 'false'),
+      'import.meta.env.VITE_DINGTALK_SSO_ENABLED': JSON.stringify(dingtalkSsoEnabled ? 'true' : 'false'),
     },
     plugins: [react()],
     resolve: {

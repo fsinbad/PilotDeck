@@ -100,6 +100,41 @@ const runMigrations = () => {
       db.exec('ALTER TABLE users ADD COLUMN has_completed_onboarding BOOLEAN DEFAULT 0');
     }
 
+    // Multi-user + DingTalk SSO migration
+    // For old databases: password_hash is NOT NULL and new columns are missing.
+    // SQLite cannot ALTER COLUMN to drop NOT NULL, so we recreate the table.
+    const passwordHashCol = tableInfo.find(col => col.name === 'password_hash');
+    const needsUsersTableMigration = !columnNames.includes('dingtalk_union_id') ||
+      (passwordHashCol && passwordHashCol.notnull);
+
+    if (needsUsersTableMigration) {
+      console.log('Running migration: Upgrading users table for multi-user + DingTalk SSO');
+      db.pragma('foreign_keys = OFF');
+      db.exec(`CREATE TABLE users_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_login DATETIME,
+        is_active BOOLEAN DEFAULT 1,
+        git_name TEXT,
+        git_email TEXT,
+        has_completed_onboarding BOOLEAN DEFAULT 0,
+        dingtalk_union_id TEXT UNIQUE,
+        dingtalk_nick TEXT,
+        dingtalk_avatar TEXT,
+        role TEXT DEFAULT 'member'
+      )`);
+      // Copy existing data, matching only columns that exist in the old table
+      const oldColList = columnNames.join(', ');
+      db.exec(`INSERT INTO users_new (${oldColList}) SELECT ${oldColList} FROM users`);
+      db.exec('DROP TABLE users');
+      db.exec('ALTER TABLE users_new RENAME TO users');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)');
+      db.pragma('foreign_keys = ON');
+    }
+
     db.exec(`
       CREATE TABLE IF NOT EXISTS user_notification_preferences (
         user_id INTEGER PRIMARY KEY,
@@ -147,6 +182,31 @@ const runMigrations = () => {
       UNIQUE(session_id, provider)
     )`);
     db.exec('CREATE INDEX IF NOT EXISTS idx_session_names_lookup ON session_names(session_id, provider)');
+
+    // Migrate session_names: add user_id column and update UNIQUE constraint
+    const sessionTableInfo = db.prepare("PRAGMA table_info(session_names)").all();
+    const sessionColumnNames = sessionTableInfo.map(col => col.name);
+    if (!sessionColumnNames.includes('user_id')) {
+      console.log('Running migration: Adding user_id to session_names and updating UNIQUE constraint');
+      db.exec(`ALTER TABLE session_names ADD COLUMN user_id INTEGER`);
+      // Recreate the table with the new UNIQUE constraint (SQLite cannot ALTER constraints in-place)
+      db.exec(`CREATE TABLE IF NOT EXISTS session_names_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT NOT NULL,
+        provider TEXT NOT NULL DEFAULT 'claude',
+        custom_name TEXT NOT NULL,
+        user_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(session_id, provider, user_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`);
+      db.exec(`INSERT INTO session_names_new (id, session_id, provider, custom_name, user_id, created_at, updated_at)
+               SELECT id, session_id, provider, custom_name, NULL, created_at, updated_at FROM session_names`);
+      db.exec(`DROP TABLE session_names`);
+      db.exec(`ALTER TABLE session_names_new RENAME TO session_names`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_session_names_lookup ON session_names(session_id, provider)`);
+    }
 
     console.log('Database migrations completed successfully');
   } catch (error) {
@@ -213,7 +273,7 @@ const userDb = {
   // Get user by ID
   getUserById: (userId) => {
     try {
-      const row = db.prepare('SELECT id, username, created_at, last_login FROM users WHERE id = ? AND is_active = 1').get(userId);
+      const row = db.prepare('SELECT id, username, created_at, last_login, role FROM users WHERE id = ? AND is_active = 1').get(userId);
       return row;
     } catch (err) {
       throw err;
@@ -222,7 +282,7 @@ const userDb = {
 
   getFirstUser: () => {
     try {
-      const row = db.prepare('SELECT id, username, created_at, last_login FROM users WHERE is_active = 1 LIMIT 1').get();
+      const row = db.prepare('SELECT id, username, created_at, last_login, role FROM users WHERE is_active = 1 LIMIT 1').get();
       return row;
     } catch (err) {
       throw err;
@@ -260,6 +320,67 @@ const userDb = {
     try {
       const row = db.prepare('SELECT has_completed_onboarding FROM users WHERE id = ?').get(userId);
       return row?.has_completed_onboarding === 1;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get user by DingTalk union ID (for SSO login)
+  getUserByDingTalkId: (unionId) => {
+    try {
+      const row = db.prepare('SELECT * FROM users WHERE dingtalk_union_id = ?').get(unionId);
+      return row;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Create a new DingTalk SSO user (no password)
+  createDingTalkUser: ({ unionId, nick, avatar, email, mobile }) => {
+    try {
+      const username = nick || mobile || unionId;
+      const stmt = db.prepare(
+        `INSERT INTO users (username, password_hash, dingtalk_union_id, dingtalk_nick, dingtalk_avatar, role)
+         VALUES (?, NULL, ?, ?, ?, 'member')`
+      );
+      const result = stmt.run(username, unionId, nick || null, avatar || null);
+      return { id: result.lastInsertRowid, username, dingtalk_union_id: unionId };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get all users (for admin user management)
+  getAllUsers: () => {
+    try {
+      const rows = db.prepare(
+        `SELECT id, username, created_at, last_login, is_active, role,
+                dingtalk_union_id, dingtalk_nick, dingtalk_avatar
+         FROM users ORDER BY created_at ASC`
+      ).all();
+      return rows;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Enable or disable a user
+  updateUserStatus: (userId, isActive) => {
+    try {
+      const stmt = db.prepare('UPDATE users SET is_active = ? WHERE id = ?');
+      const result = stmt.run(isActive ? 1 : 0, userId);
+      return result.changes > 0;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Delete a user
+  deleteUser: (userId) => {
+    try {
+      const stmt = db.prepare('DELETE FROM users WHERE id = ?');
+      const result = stmt.run(userId);
+      return result.changes > 0;
     } catch (err) {
       throw err;
     }

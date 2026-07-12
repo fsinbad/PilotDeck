@@ -157,6 +157,7 @@ export const api = {
   // Auth endpoints (no token required)
   auth: {
     status: () => fetch('/api/auth/status'),
+    dingtalkStatus: () => fetch('/api/auth/dingtalk/status'),
     login: (username, password) => fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

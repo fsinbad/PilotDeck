@@ -76,6 +76,8 @@ import {
 import sessionManager from './sessionManager.js';
 import gitRoutes from './routes/git.js';
 import authRoutes from './routes/auth.js';
+import dingtalkAuthRoutes from './routes/dingtalk-auth.js';
+import userManagementRoutes from './routes/users.js';
 import mcpRoutes from './routes/mcp.js';
 import taskmasterRoutes from './routes/taskmaster.js';
 import memoryRoutes, { MEMORY_DASHBOARD_DIR } from './routes/memory.js';
@@ -468,6 +470,10 @@ app.use('/api', validateApiKey);
 
 // Authentication routes (public)
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', dingtalkAuthRoutes);
+
+// User management routes (protected, admin-only)
+app.use('/api/users', authenticateToken, userManagementRoutes);
 
 // Projects API Routes (protected)
 app.use('/api/projects', authenticateToken, projectsRoutes);

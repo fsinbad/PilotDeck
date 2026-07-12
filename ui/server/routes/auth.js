@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { userDb, db } from '../database/db.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
-import { DISABLE_LOCAL_AUTH } from '../constants/config.js';
+import { DISABLE_LOCAL_AUTH, DINGTALK_SSO_ENABLED } from '../constants/config.js';
 
 const router = express.Router();
 
@@ -14,12 +14,14 @@ router.get('/status', async (req, res) => {
         needsSetup: false,
         isAuthenticated: true,
         authDisabled: true,
+        dingtalkSsoEnabled: DINGTALK_SSO_ENABLED,
       });
     }
     const hasUsers = await userDb.hasUsers();
     res.json({ 
       needsSetup: !hasUsers,
-      isAuthenticated: false // Will be overridden by frontend if token exists
+      isAuthenticated: false, // Will be overridden by frontend if token exists
+      dingtalkSsoEnabled: DINGTALK_SSO_ENABLED,
     });
   } catch (error) {
     console.error('Auth status error:', error);
@@ -32,6 +34,9 @@ router.post('/register', async (req, res) => {
   try {
     if (DISABLE_LOCAL_AUTH) {
       return res.status(403).json({ error: 'Registration is disabled (NUKEMAI_DISABLE_LOCAL_AUTH)' });
+    }
+    if (DINGTALK_SSO_ENABLED) {
+      return res.status(403).json({ error: 'Registration is disabled. Please use DingTalk SSO login.' });
     }
     const { username, password } = req.body;
     
