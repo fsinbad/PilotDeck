@@ -127,11 +127,16 @@ function extractProbeText(body, providerKind) {
   return choices
     .map((choice) => {
       const content = choice?.message?.content;
-      if (typeof content === 'string') return content;
+      if (typeof content === 'string' && content.trim()) return content;
       if (Array.isArray(content)) {
-        return content.map((part) => (typeof part?.text === 'string' ? part.text : '')).join('');
+        const text = content.map((part) => (typeof part?.text === 'string' ? part.text : '')).join('');
+        if (text.trim()) return text;
       }
-      if (typeof choice?.text === 'string') return choice.text;
+      if (typeof choice?.text === 'string' && choice.text.trim()) return choice.text;
+      // Fallback: some reasoning models (e.g. Kimi, DeepSeek) return empty
+      // content but populate reasoning_content when max_tokens is low.
+      const reasoning = choice?.message?.reasoning_content;
+      if (typeof reasoning === 'string' && reasoning.trim()) return reasoning;
       return '';
     })
     .join('')
@@ -534,7 +539,7 @@ router.post('/test-connection', async (req, res) => {
         },
         body: JSON.stringify({
           model,
-          max_tokens: 8,
+          max_tokens: 64,
           messages: [{ role: 'user', content: 'Hi' }],
         }),
         signal: controller.signal,
@@ -621,10 +626,14 @@ router.post('/test-connection', async (req, res) => {
 
       const providerKind = isAnthropic ? 'anthropic' : isGoogle ? 'google' : isOpenAIResponses ? 'responses' : 'openai';
       const probeText = extractProbeText(body, providerKind);
+      // A valid response shape means the connection works. Don't fail just
+      // because content is empty — reasoning models (Kimi, DeepSeek, o1, etc.)
+      // may return empty content with low max_tokens, and that's not a
+      // connection error.
       if (!probeText) {
         return res.json({
-          ok: false,
-          error: `Endpoint returned a valid ${expectedShape}, but the model did not produce any chat text. Check that ${model} supports chat completions.`,
+          ok: true,
+          message: `Connected successfully - Model ${model} is available (returned an empty response, which is normal for some reasoning models).`,
         });
       }
 
