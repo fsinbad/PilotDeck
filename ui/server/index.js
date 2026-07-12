@@ -78,6 +78,8 @@ import gitRoutes from './routes/git.js';
 import authRoutes from './routes/auth.js';
 import dingtalkAuthRoutes from './routes/dingtalk-auth.js';
 import userManagementRoutes from './routes/users.js';
+import teamRoutes from './routes/teams.js';
+import workspaceRoutes from './routes/workspaces.js';
 import mcpRoutes from './routes/mcp.js';
 import taskmasterRoutes from './routes/taskmaster.js';
 import memoryRoutes, { MEMORY_DASHBOARD_DIR } from './routes/memory.js';
@@ -106,7 +108,7 @@ import messagesRoutes from './routes/messages.js';
 import { closeMemoryServices, startMemoryScheduler, stopMemoryScheduler } from './services/memoryService.js';
 import { createNormalizedMessage } from './nukemai-message.js';
 import { startEnabledPluginServers, stopAllPlugins, getPluginPort } from './utils/plugin-process-manager.js';
-import { initializeDatabase, sessionNamesDb, applyCustomSessionNames, userDb } from './database/db.js';
+import { initializeDatabase, sessionNamesDb, applyCustomSessionNames, userDb, teamDb } from './database/db.js';
 import { configureWebPush } from './services/vapid-keys.js';
 
 import { runServerStartupBeforeListen, startServerAfterStartup } from './services/server-startup.js';
@@ -474,6 +476,10 @@ app.use('/api/auth', dingtalkAuthRoutes);
 
 // User management routes (protected, admin-only)
 app.use('/api/users', authenticateToken, userManagementRoutes);
+
+// Team workspace routes (protected)
+app.use('/api/teams', authenticateToken, teamRoutes);
+app.use('/api/workspaces', authenticateToken, workspaceRoutes);
 
 // Projects API Routes (protected)
 app.use('/api/projects', authenticateToken, projectsRoutes);
@@ -2240,7 +2246,25 @@ function handleChatConnection(ws, request) {
                     }
                 }
                 const providerHint = data.options?.providerHint || data.type.replace('-command', '');
+                // Extract workspaceId from the incoming options and verify
+                // the user has access to the workspace before proceeding.
+                const workspaceId = data.options?.workspaceId || data.workspaceId;
+                if (workspaceId && userId) {
+                    const wsPermission = teamDb.getWorkspacePermission(workspaceId, userId);
+                    if (!wsPermission) {
+                        streamWriter.send(createNormalizedMessage({
+                            sessionId: commandSessionId || undefined,
+                            provider: providerHint,
+                            kind: 'error',
+                            content: 'You do not have access to this workspace.',
+                        }));
+                        return;
+                    }
+                }
                 const gatewayOptions = { ...data.options, userId: userId?.toString() };
+                if (workspaceId) {
+                    gatewayOptions.workspaceId = workspaceId;
+                }
                 await runChatViaGateway(data.command, gatewayOptions, streamWriter, providerHint);
             } else if (data.type === 'abort-session') {
                 console.log('[DEBUG] Abort session request:', data.sessionId);

@@ -4,6 +4,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { extractProjectDirectory } from '../projects.js';
 import { runChatViaGateway } from '../nukemai-bridge.js';
+import { teamDb } from '../database/db.js';
 
 const router = express.Router();
 const COMMIT_DIFF_CHARACTER_LIMIT = 500_000;
@@ -971,6 +972,15 @@ Generate the commit message:`;
       setSessionId: () => {}, // No-op for this use case
     };
 
+    // Verify workspace access if workspaceId is provided
+    const workspaceId = req.body?.workspaceId;
+    if (workspaceId && req.user?.id) {
+      const wsPermission = teamDb.getWorkspacePermission(workspaceId, req.user.id);
+      if (!wsPermission) {
+        throw new Error('You do not have access to this workspace');
+      }
+    }
+
     console.log('🚀 Calling AI agent with provider:', provider);
     console.log('📝 Prompt length:', prompt.length);
 
@@ -984,6 +994,7 @@ Generate the commit message:`;
         permissionMode: 'bypassPermissions',
         model: provider === 'cursor' ? undefined : 'sonnet',
         userId: req.user?.id?.toString(),
+        ...(workspaceId ? { workspaceId } : {}),
       },
       writer,
       provider || 'nukemai',

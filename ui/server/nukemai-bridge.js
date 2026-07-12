@@ -60,6 +60,7 @@ import {
 } from '../../src/status/agentStatus.js';
 import { createNormalizedMessage } from './nukemai-message.js';
 import { readPermissionSettings } from './services/permissionSettings.js';
+import { teamDb } from './database/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -283,7 +284,7 @@ function newSessionKey(userId) {
     return `web${sep}${userPart}${sep}s_${randomUUID()}`;
 }
 
-function ensureSessionState(sessionKey, projectKey, channelKey, userId) {
+function ensureSessionState(sessionKey, projectKey, channelKey, userId, workspaceId) {
     let state = sessionState.get(sessionKey);
     if (!state) {
         state = {
@@ -291,6 +292,7 @@ function ensureSessionState(sessionKey, projectKey, channelKey, userId) {
             projectKey,
             channelKey,
             userId,
+            workspaceId,
             runId: undefined,
             active: false,
             tokenBudget: null,
@@ -301,6 +303,7 @@ function ensureSessionState(sessionKey, projectKey, channelKey, userId) {
         state.projectKey = projectKey;
         state.channelKey = channelKey;
         state.userId = userId;
+        state.workspaceId = workspaceId;
     }
     return state;
 }
@@ -1023,15 +1026,54 @@ export async function runChatViaGateway(
     writer,
     provider = 'nukemai',
 ) {
-    const projectKey = options.projectPath || options.cwd || GENERAL_HOME;
-    const channelKey = 'web';
     const userId = options.userId;
+    const workspaceId = options.workspaceId;
+
+    // When a workspaceId is provided, resolve the project root from the database
+    // instead of trusting the client-provided path. This ensures users can only
+    // access workspace-approved project roots.
+    let projectKey = options.projectPath || options.cwd || GENERAL_HOME;
+    if (workspaceId) {
+        try {
+            const workspace = teamDb.getWorkspace(
+                parseInt(workspaceId, 10),
+                parseInt(userId, 10),
+            );
+            if (!workspace) {
+                writer.send(
+                    createNormalizedMessage({
+                        provider,
+                        kind: 'error',
+                        code: 'workspace_access_denied',
+                        content: 'Workspace not found or access denied.',
+                        userHint: 'You do not have access to this workspace.',
+                    }),
+                );
+                return;
+            }
+            projectKey = workspace.project_root;
+        } catch (err) {
+            console.error('[nukemai-bridge] Failed to resolve workspace project root:', err?.message || err);
+            writer.send(
+                createNormalizedMessage({
+                    provider,
+                    kind: 'error',
+                    code: 'workspace_resolution_failed',
+                    content: 'Failed to resolve workspace.',
+                    userHint: 'Could not resolve workspace project root.',
+                }),
+            );
+            return;
+        }
+    }
+
+    const channelKey = 'web';
 
     const incoming = options.sessionId || options.sessionKey;
     const sessionKey = isNukemAISessionKey(incoming) ? incoming : newSessionKey(userId);
     const isNewSession = sessionKey !== incoming;
 
-    const state = ensureSessionState(sessionKey, projectKey, channelKey, userId);
+    const state = ensureSessionState(sessionKey, projectKey, channelKey, userId, workspaceId);
     const staleRunId = state.active ? state.runId : undefined;
 
 
@@ -1074,7 +1116,7 @@ export async function runChatViaGateway(
                 `[nukemai-bridge] ${abortAction} turn ${staleRunId} for ${sessionKey} before submit`,
             );
             try {
-                await gw.abortTurn({ sessionKey, runId: staleRunId, reason: abortReason });
+                await gw.abortTurn({ sessionKey, runId: staleRunId, reason: abortReason, ...(userId ? { userId } : {}), ...(state.workspaceId ? { workspaceId: state.workspaceId } : {}) });
             } catch (err) {
                 if (options?.forceStart === true) {
                     const message = 'Could not stop the current turn before sending the queued message. Please wait for the current turn to finish or try stopping it again.';
@@ -1105,6 +1147,7 @@ export async function runChatViaGateway(
             mode: resolvedMode,
             runId,
             ...(userId ? { userId } : {}),
+            ...(workspaceId ? { workspaceId } : {}),
             ...(options?.thinking ? { thinking: options.thinking } : {}),
             ...(basePermissionMode ? { basePermissionMode } : {}),
             ...(attachments.length > 0 ? { attachments } : {}),
@@ -1253,7 +1296,12 @@ export async function abortViaGateway(sessionId, _provider = 'nukemai') {
     const state = sessionState.get(sessionKey);
     try {
         const runId = state?.runId;
-        await gw.abortTurn({ sessionKey, runId });
+        await gw.abortTurn({
+            sessionKey,
+            runId,
+            ...(state?.userId ? { userId: state.userId } : {}),
+            ...(state?.workspaceId ? { workspaceId: state.workspaceId } : {}),
+        });
         if (state && (!runId || state.runId === runId)) {
             state.active = false;
             state.runId = undefined;

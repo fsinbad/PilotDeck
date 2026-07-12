@@ -433,6 +433,46 @@ export const api = {
       }),
   },
 
+  // Team endpoints
+  teams: {
+    list: () => authenticatedFetch('/api/teams'),
+    create: (name) =>
+      authenticatedFetch('/api/teams', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      }),
+    get: (id) => authenticatedFetch(`/api/teams/${id}`),
+    addMember: (teamId, userId, role) =>
+      authenticatedFetch(`/api/teams/${teamId}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ userId, role }),
+      }),
+    removeMember: (teamId, userId) =>
+      authenticatedFetch(`/api/teams/${teamId}/members/${userId}`, {
+        method: 'DELETE',
+      }),
+    workspaces: (teamId) => authenticatedFetch(`/api/teams/${teamId}/workspaces`),
+  },
+
+  // Workspace endpoints
+  workspaces: {
+    list: () => authenticatedFetch('/api/workspaces'),
+    create: (teamId, name, projectRoot) =>
+      authenticatedFetch('/api/workspaces', {
+        method: 'POST',
+        body: JSON.stringify({ teamId, name, projectRoot }),
+      }),
+    get: (id) => authenticatedFetch(`/api/workspaces/${id}`),
+    delete: (id) =>
+      authenticatedFetch(`/api/workspaces/${id}`, { method: 'DELETE' }),
+    permissions: (id) => authenticatedFetch(`/api/workspaces/${id}/permissions`),
+    setPermission: (id, userId, permission) =>
+      authenticatedFetch(`/api/workspaces/${id}/permissions`, {
+        method: 'POST',
+        body: JSON.stringify({ userId, permission }),
+      }),
+  },
+
   // Generic GET method for any endpoint
   get: (endpoint) => authenticatedFetch(`/api${endpoint}`),
 

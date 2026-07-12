@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { promises as fs } from 'fs';
 import crypto from 'crypto';
-import { userDb, apiKeysDb, githubTokensDb } from '../database/db.js';
+import { userDb, apiKeysDb, githubTokensDb, teamDb } from '../database/db.js';
 import { addProjectManually } from '../projects.js';
 import { runChatViaGateway } from '../nukemai-bridge.js';
 import { Octokit } from '@octokit/rest';
@@ -932,6 +932,15 @@ router.post('/', validateExternalApiKey, async (req, res) => {
       });
     }
 
+    // Verify workspace access if workspaceId is provided
+    const workspaceId = req.body?.workspaceId;
+    if (workspaceId && req.user?.id) {
+      const wsPermission = teamDb.getWorkspacePermission(workspaceId, req.user.id);
+      if (!wsPermission) {
+        return res.status(403).json({ error: 'You do not have access to this workspace' });
+      }
+    }
+
     console.log(`🛫 Starting NukemAI gateway session (provider=${provider})`);
 
     await runChatViaGateway(
@@ -943,6 +952,7 @@ router.post('/', validateExternalApiKey, async (req, res) => {
         model,
         permissionMode: 'bypassPermissions',
         userId: req.user?.id?.toString(),
+        ...(workspaceId ? { workspaceId } : {}),
       },
       writer,
       provider,

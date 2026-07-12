@@ -89,6 +89,7 @@ export type GatewaySubmitTurnInput = {
   message: string;
   projectKey?: string;
   userId?: string;
+  workspaceId?: string;
   /** Override the agent session's working directory for this session. */
   workspaceCwd?: string;
   attachments?: ChannelAttachment[];
@@ -367,11 +368,11 @@ export type AlwaysOnRerunPlanResult = {
 
 export interface Gateway {
   submitTurn(input: GatewaySubmitTurnInput): AsyncIterable<GatewayEvent>;
-  abortTurn(input: { sessionKey: string; runId?: string; reason?: string; userId?: string }): Promise<void>;
+  abortTurn(input: { sessionKey: string; runId?: string; reason?: string; userId?: string; workspaceId?: string }): Promise<void>;
   listSessions(input: ListSessionsInput): Promise<ListSessionsResult>;
   resumeSession(input: { sessionKey: string }): Promise<{ sessionKey: string }>;
   newSession(input: NewSessionInput): Promise<{ sessionKey: string }>;
-  closeSession(input: { sessionKey: string; reason?: string; userId?: string }): Promise<void>;
+  closeSession(input: { sessionKey: string; reason?: string; userId?: string; workspaceId?: string }): Promise<void>;
   recordAgentStatusMessage?(input: GatewayRecordAgentStatusMessageInput): Promise<{ recorded: boolean }>;
   describeServer(): Promise<GatewayServerInfo>;
   getActiveTurnSnapshot?(input: GatewayActiveTurnSnapshotInput): Promise<GatewayActiveTurnSnapshot>;

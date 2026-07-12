@@ -8,7 +8,11 @@ import { TasksSettingsProvider } from './contexts/TasksSettingsContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
 import { PluginsProvider } from './contexts/PluginsContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { TeamProvider } from './contexts/TeamContext';
 import AppShellV2 from './components/app-shell/AppShellV2';
+import TeamManagement from './components/team/TeamManagement';
+import WorkspaceList from './components/team/WorkspaceList';
+import WorkspaceSettings from './components/team/WorkspaceSettings';
 import i18n from './i18n/config.js';
 
 export default function App() {
@@ -26,9 +30,25 @@ export default function App() {
               <PluginsProvider>
                 <TasksSettingsProvider>
                   <TaskMasterProvider>
+                    <TeamProvider>
                     <Router basename={window.__ROUTER_BASENAME__ || ''}>
                       <Routes>
                         <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="/teams" element={
+                          <ProtectedRoute>
+                            <TeamManagement />
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/workspaces" element={
+                          <ProtectedRoute>
+                            <WorkspaceList />
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/workspaces/:id/settings" element={
+                          <ProtectedRoute>
+                            <WorkspaceSettings />
+                          </ProtectedRoute>
+                        } />
                         <Route path="*" element={
                           <ProtectedRoute>
                             <AppShellV2 />
@@ -36,6 +56,7 @@ export default function App() {
                         } />
                       </Routes>
                     </Router>
+                    </TeamProvider>
                   </TaskMasterProvider>
                 </TasksSettingsProvider>
               </PluginsProvider>

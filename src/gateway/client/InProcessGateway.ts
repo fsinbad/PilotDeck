@@ -371,6 +371,7 @@ export class InProcessGateway implements Gateway {
           projectKey: input.projectKey,
           channelKey: input.channelKey,
           userId: input.userId,
+          workspaceId: input.workspaceId,
         });
         if (input.timeoutMs !== undefined && Number.isFinite(input.timeoutMs) && input.timeoutMs > 0) {
           timeoutHandle = setTimeout(() => {
@@ -541,11 +542,11 @@ export class InProcessGateway implements Gateway {
       this.activeTurnReplays.delete(input.sessionKey);
       this.elicitationBus.rejectSession(input.sessionKey, "turn_ended");
       this.permissionBus.rejectSession(input.sessionKey, "turn_ended");
-      this.router.endTurn(input.sessionKey, runId, input.userId);
+      this.router.endTurn(input.sessionKey, runId, input.userId, input.workspaceId);
       if (timedOut) {
         // The timed-out AgentSession is never safe to reuse. Do not await a
         // misbehaving tool here: the hard timeout must release the Cron run.
-        await this.router.close(input.sessionKey, input.userId);
+        await this.router.close(input.sessionKey, input.userId, input.workspaceId);
         void pump.catch(() => undefined);
       } else {
         // Defensive — make sure the pump promise is settled before we resolve.
@@ -567,9 +568,9 @@ export class InProcessGateway implements Gateway {
     }
   }
 
-  async abortTurn(input: { sessionKey: string; runId?: string; reason?: string; userId?: string }): Promise<void> {
+  async abortTurn(input: { sessionKey: string; runId?: string; reason?: string; userId?: string; workspaceId?: string }): Promise<void> {
     const reason = input.reason ?? (input.runId ? `aborted:${input.runId}` : "aborted");
-    await this.router.abort(input.sessionKey, reason, input.userId);
+    await this.router.abort(input.sessionKey, reason, input.userId, input.workspaceId);
     // Wait for the in-flight `submitTurn` (if any) to fully unwind so
     // `inFlightTurns` has been cleared by the time the RPC response is
     // sent. Otherwise a fast "stop → re-send" from a client races the
@@ -595,8 +596,8 @@ export class InProcessGateway implements Gateway {
     return { sessionKey: `${input.channelKey}:${userPart}${projectKey}s_${suffix}` };
   }
 
-  async closeSession(input: { sessionKey: string; reason?: string; userId?: string }): Promise<void> {
-    await this.router.close(input.sessionKey, input.userId);
+  async closeSession(input: { sessionKey: string; reason?: string; userId?: string; workspaceId?: string }): Promise<void> {
+    await this.router.close(input.sessionKey, input.userId, input.workspaceId);
     this.sessionPermissionGrants.delete(input.sessionKey);
   }
 

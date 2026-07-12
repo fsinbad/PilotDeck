@@ -590,9 +590,10 @@ class ProjectRuntimeRegistry {
     this.sessionMcpRuntimes.clear();
 
     if (projectRoot) {
-      // Cache keys are namespaced per user: `${userId}:${projectRoot}` or
-      // just `projectRoot` in single-user mode. Invalidate all users'
-      // runtimes for this project.
+      // Cache keys are namespaced per user+workspace:
+      // `${userId}:${workspaceId}:${projectRoot}` or just `projectRoot`
+      // in single-user/no-workspace mode. Invalidate all users' runtimes
+      // for this project.
       for (const [key, runtime] of this.runtimes) {
         if (key !== projectRoot && !key.endsWith(`:${projectRoot}`)) continue;
         if (runtime.mcpRuntime) {
@@ -641,10 +642,12 @@ class ProjectRuntimeRegistry {
     this._sessionOverrides.set(sessionKey, { ...existing, cwd });
   }
 
-  resolve(projectKey?: string, userId?: string): ProjectRuntime {
+  resolve(projectKey?: string, userId?: string, workspaceId?: string): ProjectRuntime {
     const projectRoot = resolve(projectKey ?? this.options.fallbackProjectRoot);
     this.options.onProjectActivated?.(projectRoot);
-    const cacheKey = userId ? `${userId}:${projectRoot}` : projectRoot;
+    const cacheKey = [userId ?? 'default', workspaceId ?? 'default', projectRoot]
+      .filter(Boolean)
+      .join(':');
     const cached = this.runtimes.get(cacheKey);
     if (cached) {
       return cached;
@@ -866,7 +869,7 @@ class ProjectRuntimeRegistry {
   }
 
   private async prepareSessionRuntime(context: GatewaySessionContext) {
-    const runtime = this.resolve(context.projectKey, context.userId);
+    const runtime = this.resolve(context.projectKey, context.userId, context.workspaceId);
     await runtime.pluginRuntime.refresh();
     await this.ensureMcpReady(runtime);
     const contributions = runtime.pluginRuntime.snapshotContributions();

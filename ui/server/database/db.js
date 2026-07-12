@@ -208,6 +208,146 @@ const runMigrations = () => {
       db.exec(`CREATE INDEX IF NOT EXISTS idx_session_names_lookup ON session_names(session_id, provider)`);
     }
 
+    // Team workspace tables (Phase 3)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        owner_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS team_memberships (
+        team_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        role TEXT DEFAULT 'member',
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (team_id, user_id),
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        project_root TEXT NOT NULL,
+        created_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspace_permissions (
+        workspace_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        permission TEXT DEFAULT 'read',
+        PRIMARY KEY (workspace_id, user_id),
+        FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Team workspaces (Phase 3) - create tables for existing installations
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        owner_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS team_memberships (
+        team_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        role TEXT DEFAULT 'member',
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (team_id, user_id),
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        project_root TEXT NOT NULL,
+        created_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspace_permissions (
+        workspace_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        permission TEXT DEFAULT 'read',
+        PRIMARY KEY (workspace_id, user_id),
+        FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_team_memberships_user ON team_memberships(user_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_team_memberships_team ON team_memberships(team_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_workspaces_team ON workspaces(team_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_workspace_permissions_user ON workspace_permissions(user_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_workspace_permissions_workspace ON workspace_permissions(workspace_id)');
+
+    // Team workspaces tables (Phase 3)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS teams (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        owner_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS team_memberships (
+        team_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        role TEXT DEFAULT 'member',
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (team_id, user_id),
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        project_root TEXT NOT NULL,
+        created_by INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspace_permissions (
+        workspace_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        permission TEXT DEFAULT 'read',
+        PRIMARY KEY (workspace_id, user_id),
+        FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
     console.log('Database migrations completed successfully');
   } catch (error) {
     console.error('Error running migrations:', error.message);
@@ -736,6 +876,224 @@ const githubTokensDb = {
   }
 };
 
+// Team and workspace database operations (Phase 3)
+const teamDb = {
+  // Create a team and auto-add the owner as 'owner' role
+  createTeam: (name, ownerId) => {
+    try {
+      const insertTeam = db.prepare('INSERT INTO teams (name, owner_id) VALUES (?, ?)');
+      const result = insertTeam.run(name, ownerId);
+      const teamId = result.lastInsertRowid;
+      db.prepare('INSERT INTO team_memberships (team_id, user_id, role) VALUES (?, ?, ?)').run(teamId, ownerId, 'owner');
+      return { id: teamId, name, owner_id: ownerId };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get all teams where a user is a member (with their role)
+  getUserTeams: (userId) => {
+    try {
+      return db.prepare(`
+        SELECT t.id, t.name, t.owner_id, t.created_at, tm.role, tm.joined_at
+        FROM teams t
+        JOIN team_memberships tm ON t.id = tm.team_id
+        WHERE tm.user_id = ?
+        ORDER BY t.created_at ASC
+      `).all(userId);
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get a team if the user is a member
+  getTeam: (teamId, userId) => {
+    try {
+      return db.prepare(`
+        SELECT t.id, t.name, t.owner_id, t.created_at, tm.role
+        FROM teams t
+        JOIN team_memberships tm ON t.id = tm.team_id
+        WHERE t.id = ? AND tm.user_id = ?
+      `).get(teamId, userId);
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Add a member to a team
+  addTeamMember: (teamId, userId, role = 'member') => {
+    try {
+      db.prepare('INSERT INTO team_memberships (team_id, user_id, role) VALUES (?, ?, ?)').run(teamId, userId, role);
+      return { teamId, userId, role };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Remove a member from a team (prevent removing the owner)
+  removeTeamMember: (teamId, userId) => {
+    try {
+      const membership = db.prepare('SELECT role FROM team_memberships WHERE team_id = ? AND user_id = ?').get(teamId, userId);
+      if (!membership) return false;
+      if (membership.role === 'owner') return false;
+      const result = db.prepare('DELETE FROM team_memberships WHERE team_id = ? AND user_id = ?').run(teamId, userId);
+      return result.changes > 0;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // List all members of a team
+  getTeamMembers: (teamId) => {
+    try {
+      return db.prepare(`
+        SELECT u.id, u.username, u.dingtalk_nick, u.dingtalk_avatar, tm.role, tm.joined_at
+        FROM team_memberships tm
+        JOIN users u ON tm.user_id = u.id
+        WHERE tm.team_id = ?
+        ORDER BY tm.joined_at ASC
+      `).all(teamId);
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Create a workspace and auto-add the creator as 'admin' permission
+  createWorkspace: (teamId, name, projectRoot, createdBy) => {
+    try {
+      const insertWs = db.prepare('INSERT INTO workspaces (team_id, name, project_root, created_by) VALUES (?, ?, ?, ?)');
+      const result = insertWs.run(teamId, name, projectRoot, createdBy);
+      const workspaceId = result.lastInsertRowid;
+      db.prepare('INSERT INTO workspace_permissions (workspace_id, user_id, permission) VALUES (?, ?, ?)').run(workspaceId, createdBy, 'admin');
+      return { id: workspaceId, team_id: teamId, name, project_root: projectRoot, created_by: createdBy };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // List all workspaces in a team
+  getTeamWorkspaces: (teamId) => {
+    try {
+      return db.prepare(`
+        SELECT id, team_id, name, project_root, created_by, created_at
+        FROM workspaces
+        WHERE team_id = ?
+        ORDER BY created_at DESC
+      `).all(teamId);
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get all workspaces a user has access to (via team membership or direct permission)
+  getUserWorkspaces: (userId) => {
+    try {
+      return db.prepare(`
+        SELECT DISTINCT w.id, w.team_id, w.name, w.project_root, w.created_by, w.created_at,
+               t.name as team_name,
+               COALESCE(wp.permission, 'read') as permission
+        FROM workspaces w
+        JOIN team_memberships tm ON w.team_id = tm.team_id AND tm.user_id = ?
+        JOIN teams t ON w.team_id = t.id
+        LEFT JOIN workspace_permissions wp ON w.id = wp.workspace_id AND wp.user_id = ?
+        ORDER BY w.created_at DESC
+      `).all(userId, userId);
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get a workspace if the user has access (via team membership)
+  getWorkspace: (workspaceId, userId) => {
+    try {
+      return db.prepare(`
+        SELECT w.id, w.team_id, w.name, w.project_root, w.created_by, w.created_at,
+               t.name as team_name,
+               COALESCE(wp.permission, 'read') as permission
+        FROM workspaces w
+        JOIN team_memberships tm ON w.team_id = tm.team_id AND tm.user_id = ?
+        JOIN teams t ON w.team_id = t.id
+        LEFT JOIN workspace_permissions wp ON w.id = wp.workspace_id AND wp.user_id = ?
+        WHERE w.id = ?
+      `).get(userId, userId, workspaceId);
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get just the project root for a workspace (used by the bridge for isolation)
+  getWorkspaceProjectRoot: (workspaceId) => {
+    try {
+      const row = db.prepare('SELECT project_root FROM workspaces WHERE id = ?').get(workspaceId);
+      return row?.project_root || null;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Update a user's permission on a workspace
+  updateWorkspacePermission: (workspaceId, userId, permission) => {
+    try {
+      db.prepare(`
+        INSERT INTO workspace_permissions (workspace_id, user_id, permission)
+        VALUES (?, ?, ?)
+        ON CONFLICT(workspace_id, user_id) DO UPDATE SET permission = excluded.permission
+      `).run(workspaceId, userId, permission);
+      return { workspaceId, userId, permission };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Delete a workspace (only if user is admin or team owner)
+  deleteWorkspace: (workspaceId, userId) => {
+    try {
+      const workspace = db.prepare('SELECT team_id FROM workspaces WHERE id = ?').get(workspaceId);
+      if (!workspace) return false;
+      const membership = db.prepare('SELECT role FROM team_memberships WHERE team_id = ? AND user_id = ?').get(workspace.team_id, userId);
+      if (!membership) return false;
+      if (membership.role !== 'owner' && membership.role !== 'admin') return false;
+      const result = db.prepare('DELETE FROM workspaces WHERE id = ?').run(workspaceId);
+      return result.changes > 0;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get a user's permission level for a workspace (or null if no access)
+  getWorkspacePermission: (workspaceId, userId) => {
+    try {
+      const row = db.prepare(`
+        SELECT COALESCE(wp.permission, 'read') as permission
+        FROM workspaces w
+        JOIN team_memberships tm ON w.team_id = tm.team_id AND tm.user_id = ?
+        LEFT JOIN workspace_permissions wp ON w.id = wp.workspace_id AND wp.user_id = ?
+        WHERE w.id = ?
+      `).get(userId, userId, workspaceId);
+      return row?.permission || null;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // List all permissions for a workspace
+  getWorkspacePermissions: (workspaceId) => {
+    try {
+      return db.prepare(`
+        SELECT u.id, u.username, u.dingtalk_nick, COALESCE(wp.permission, 'read') as permission
+        FROM workspaces w
+        JOIN team_memberships tm ON w.team_id = tm.team_id
+        JOIN users u ON tm.user_id = u.id
+        LEFT JOIN workspace_permissions wp ON w.id = wp.workspace_id AND wp.user_id = u.id
+        WHERE w.id = ?
+        ORDER BY u.username ASC
+      `).all(workspaceId);
+    } catch (err) {
+      throw err;
+    }
+  },
+};
+
 export {
   db,
   initializeDatabase,
@@ -747,5 +1105,6 @@ export {
   sessionNamesDb,
   applyCustomSessionNames,
   appConfigDb,
+  teamDb,
   githubTokensDb // Backward compatibility
 };

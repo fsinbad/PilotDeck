@@ -6,6 +6,7 @@ export type GatewaySessionContext = {
   projectKey?: string;
   channelKey: string;
   userId?: string;
+  workspaceId?: string;
 };
 
 export type GatewaySessionFactory = (context: GatewaySessionContext) => AgentSession | Promise<AgentSession>;
@@ -68,9 +69,7 @@ export class SessionRouter {
 
   async getOrCreate(context: GatewaySessionContext): Promise<AgentSession> {
     this.sweepIdle();
-    const mapKey = context.userId
-      ? `${context.userId}:${context.sessionKey}`
-      : context.sessionKey;
+    const mapKey = `${context.userId ?? 'default'}:${context.workspaceId ?? 'default'}:${context.sessionKey}`;
     const cached = this.sessions.get(mapKey);
     if (cached) {
       cached.context = mergeSessionContext(cached.context, context);
@@ -101,8 +100,8 @@ export class SessionRouter {
     return true;
   }
 
-  endTurn(sessionKey: string, runId?: string, userId?: string): void {
-    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+  endTurn(sessionKey: string, runId?: string, userId?: string, workspaceId?: string): void {
+    const mapKey = `${userId ?? 'default'}:${workspaceId ?? 'default'}:${sessionKey}`;
     const record = this.sessions.get(mapKey);
     const inFlightRunId = this.inFlightTurns.get(sessionKey);
     if (!runId || inFlightRunId === runId) {
@@ -113,8 +112,8 @@ export class SessionRouter {
     }
   }
 
-  async abort(sessionKey: string, reason?: string, userId?: string): Promise<void> {
-    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+  async abort(sessionKey: string, reason?: string, userId?: string, workspaceId?: string): Promise<void> {
+    const mapKey = `${userId ?? 'default'}:${workspaceId ?? 'default'}:${sessionKey}`;
     const record = this.sessions.get(mapKey);
     record?.session.abort(reason);
     if (record) {
@@ -122,8 +121,8 @@ export class SessionRouter {
     }
   }
 
-  async close(sessionKey: string, userId?: string): Promise<void> {
-    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+  async close(sessionKey: string, userId?: string, workspaceId?: string): Promise<void> {
+    const mapKey = `${userId ?? 'default'}:${workspaceId ?? 'default'}:${sessionKey}`;
     const record = this.sessions.get(mapKey);
     if (record && this.sessions.delete(mapKey)) {
       this.emitSessionEvict(sessionKey, record, "closed");
@@ -184,8 +183,8 @@ export class SessionRouter {
     return this.sessions.size;
   }
 
-  snapshotSession(sessionKey: string, userId?: string): ReturnType<AgentSession["snapshot"]> | undefined {
-    const mapKey = `${userId ?? 'default'}:${sessionKey}`;
+  snapshotSession(sessionKey: string, userId?: string, workspaceId?: string): ReturnType<AgentSession["snapshot"]> | undefined {
+    const mapKey = `${userId ?? 'default'}:${workspaceId ?? 'default'}:${sessionKey}`;
     return this.sessions.get(mapKey)?.session.snapshot();
   }
 
@@ -274,5 +273,6 @@ function mergeSessionContext(
     channelKey: next.channelKey || current.channelKey,
     projectKey: current.projectKey ?? next.projectKey,
     userId: next.userId ?? current.userId,
+    workspaceId: next.workspaceId ?? current.workspaceId,
   };
 }

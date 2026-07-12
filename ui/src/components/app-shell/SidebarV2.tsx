@@ -22,6 +22,7 @@ import {
   GitBranch,
   Settings as SettingsIcon,
   Trash2,
+  Users,
 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { AppTab, Project, ProjectSession } from '../../types/app';
@@ -36,6 +37,7 @@ import {
 } from '../../lib/customNames';
 import nukemaiLogoDark from '../../assets/nukemai-wordmark-dark.png';
 import nukemaiLogoLight from '../../assets/nukemai-wordmark-light.png';
+import TeamSwitcher from '../team/TeamSwitcher';
 
 const asTimestamp = (value: unknown): number => {
   if (typeof value === 'number') return value;
@@ -1064,6 +1066,11 @@ export default function SidebarV2({
         ) : null}
       </div>
 
+      {/* Team/workspace switcher - quick dropdown to switch context */}
+      <div className="px-3 pt-1 pb-1">
+        <TeamSwitcher />
+      </div>
+
       {/* Section toggle: a thin pill control sitting just above the scroll
           area, so it doesn't move while the list scrolls. Mirrors the look of
           familiar two-tab segmented controls (e.g. iOS, ProseMirror). */}
@@ -1194,6 +1201,26 @@ export default function SidebarV2({
       </div>
 
       <div className="border-t border-neutral-200 px-2 py-2 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={() => navigate('/teams')}
+          aria-label="Teams"
+          title="Teams"
+          className="flex h-9 w-full items-center justify-start gap-2 rounded-lg px-6 text-[13px] font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+        >
+          <Users className="h-4 w-4" strokeWidth={1.75} />
+          <span>Teams</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/workspaces')}
+          aria-label="Workspaces"
+          title="Workspaces"
+          className="flex h-9 w-full items-center justify-start gap-2 rounded-lg px-6 text-[13px] font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+        >
+          <Folder className="h-4 w-4" strokeWidth={1.75} />
+          <span>Workspaces</span>
+        </button>
         <button
           type="button"
           onClick={onShowSettings}
