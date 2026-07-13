@@ -8,12 +8,14 @@ import AuthInputField from './AuthInputField';
 import AuthScreenLayout from './AuthScreenLayout';
 
 type SetupFormState = {
+  email: string;
   username: string;
   password: string;
   confirmPassword: string;
 };
 
 const initialState: SetupFormState = {
+  email: '',
   username: '',
   password: '',
   confirmPassword: '',
@@ -25,12 +27,13 @@ const initialState: SetupFormState = {
  *   form is valid.
  */
 function validateSetupForm(formState: SetupFormState): string | null {
-  if (!formState.username.trim() || !formState.password || !formState.confirmPassword) {
-    return 'Please fill in all fields.';
+  if (!formState.email.trim() || !formState.password || !formState.confirmPassword) {
+    return 'Please fill in all required fields.';
   }
 
-  if (formState.username.trim().length < 3) {
-    return 'Username must be at least 3 characters long.';
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(formState.email.trim())) {
+    return 'Please enter a valid email address.';
   }
 
   if (formState.password.length < 6) {
@@ -73,7 +76,11 @@ export default function SetupForm() {
       }
 
       setIsSubmitting(true);
-      const result = await register(formState.username.trim(), formState.password);
+      const result = await register(
+        formState.email.trim(),
+        formState.password,
+        formState.username.trim() || undefined,
+      );
       if (!result.success) {
         setErrorMessage(result.error);
       }
@@ -86,7 +93,7 @@ export default function SetupForm() {
     <AuthScreenLayout
       title="Welcome to NukemAI"
       description="Set up your account to get started"
-      footerText="This is a single-user system. Only one account can be created."
+      footerText="Create your account to get started"
       logo={
         <div className="flex items-center justify-center gap-2">
           <img
@@ -106,13 +113,26 @@ export default function SetupForm() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthInputField
+          id="email"
+          name="email"
+          label="Email"
+          value={formState.email}
+          onChange={(value) => updateField('email', value)}
+          placeholder="Enter your email"
+          isDisabled={isSubmitting}
+          type="email"
+          autoComplete="email"
+        />
+
+        <AuthInputField
           id="username"
           name="username"
-          label="Username"
+          label="Display Name (optional)"
           value={formState.username}
           onChange={(value) => updateField('username', value)}
-          placeholder="Enter your username"
+          placeholder="Enter your display name"
           isDisabled={isSubmitting}
+          isRequired={false}
           autoComplete="username"
         />
 

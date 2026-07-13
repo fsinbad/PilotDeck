@@ -15,10 +15,3 @@ export const IS_PLATFORM = process.env.VITE_IS_PLATFORM === 'true';
 export const DISABLE_LOCAL_AUTH =
   process.env.NUKEMAI_DISABLE_LOCAL_AUTH !== '0' &&
   process.env.NUKEMAI_DISABLE_LOCAL_AUTH !== 'false';
-
-/**
- * DingTalk SSO is enabled when both APP_KEY and APP_SECRET are configured.
- * @type {boolean}
- */
-export const DINGTALK_SSO_ENABLED =
-  !!process.env.DINGTALK_APP_KEY && !!process.env.DINGTALK_APP_SECRET;

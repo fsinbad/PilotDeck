@@ -113,6 +113,7 @@ const runMigrations = () => {
       db.exec(`CREATE TABLE users_new (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE,
         password_hash TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_login DATETIME,
@@ -134,6 +135,13 @@ const runMigrations = () => {
       db.exec('CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)');
       db.pragma('foreign_keys = ON');
     }
+
+    // Email column migration (for databases that already had dingtalk columns)
+    if (!columnNames.includes('email')) {
+      console.log('Running migration: Adding email column');
+      db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+    }
+    db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
 
     db.exec(`
       CREATE TABLE IF NOT EXISTS user_notification_preferences (
@@ -419,7 +427,7 @@ const userDb = {
   // Get user by ID
   getUserById: (userId) => {
     try {
-      const row = db.prepare('SELECT id, username, created_at, last_login, role FROM users WHERE id = ? AND is_active = 1').get(userId);
+      const row = db.prepare('SELECT id, username, email, created_at, last_login, role, dingtalk_union_id, dingtalk_nick, dingtalk_avatar FROM users WHERE id = ? AND is_active = 1').get(userId);
       return row;
     } catch (err) {
       throw err;
@@ -428,7 +436,7 @@ const userDb = {
 
   getFirstUser: () => {
     try {
-      const row = db.prepare('SELECT id, username, created_at, last_login, role FROM users WHERE is_active = 1 LIMIT 1').get();
+      const row = db.prepare('SELECT id, username, email, created_at, last_login, role, dingtalk_union_id, dingtalk_nick, dingtalk_avatar FROM users WHERE is_active = 1 LIMIT 1').get();
       return row;
     } catch (err) {
       throw err;
@@ -491,6 +499,30 @@ const userDb = {
       );
       const result = stmt.run(username, unionId, nick || null, avatar || null);
       return { id: result.lastInsertRowid, username, dingtalk_union_id: unionId };
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Get user by email (for email-based login)
+  getUserByEmail: (email) => {
+    try {
+      const row = db.prepare('SELECT * FROM users WHERE email = ? AND is_active = 1').get(email);
+      return row;
+    } catch (err) {
+      throw err;
+    }
+  },
+
+  // Create a new email-based user
+  createEmailUser: ({ email, passwordHash, username }) => {
+    try {
+      const finalUsername = username || email.split('@')[0];
+      const stmt = db.prepare(
+        'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)'
+      );
+      const result = stmt.run(finalUsername, email, passwordHash, 'member');
+      return { id: result.lastInsertRowid, username: finalUsername, email };
     } catch (err) {
       throw err;
     }

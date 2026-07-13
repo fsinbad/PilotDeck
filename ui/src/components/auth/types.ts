@@ -40,10 +40,9 @@ export type AuthContextValue = {
   needsSetup: boolean;
   hasCompletedOnboarding: boolean;
   error: string | null;
-  login: (username: string, password: string) => Promise<AuthActionResult>;
-  register: (username: string, password: string) => Promise<AuthActionResult>;
+  login: (email: string, password: string) => Promise<AuthActionResult>;
+  register: (email: string, password: string, username?: string) => Promise<AuthActionResult>;
   logout: () => void;
-  dingTalkLogin: () => void;
   refreshOnboardingStatus: () => Promise<void>;
 };
 

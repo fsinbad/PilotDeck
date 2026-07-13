@@ -8,6 +8,7 @@ type AuthInputFieldProps = {
   type?: 'text' | 'password' | 'email';
   name?: string;
   autoComplete?: string;
+  isRequired?: boolean;
 };
 
 /**
@@ -26,6 +27,7 @@ export default function AuthInputField({
   type = 'text',
   name,
   autoComplete,
+  isRequired = true,
 }: AuthInputFieldProps) {
   return (
     <div>
@@ -41,7 +43,7 @@ export default function AuthInputField({
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
         placeholder={placeholder}
-        required
+        required={isRequired}
         disabled={isDisabled}
       />
     </div>

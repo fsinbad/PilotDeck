@@ -76,7 +76,6 @@ import {
 import sessionManager from './sessionManager.js';
 import gitRoutes from './routes/git.js';
 import authRoutes from './routes/auth.js';
-import dingtalkAuthRoutes from './routes/dingtalk-auth.js';
 import userManagementRoutes from './routes/users.js';
 import teamRoutes from './routes/teams.js';
 import workspaceRoutes from './routes/workspaces.js';
@@ -474,7 +473,6 @@ app.use('/api', validateApiKey);
 
 // Authentication routes (public)
 app.use('/api/auth', authRoutes);
-app.use('/api/auth', dingtalkAuthRoutes);
 
 // User management routes (protected, admin-only)
 app.use('/api/users', authenticateToken, userManagementRoutes);

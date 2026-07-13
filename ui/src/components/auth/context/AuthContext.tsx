@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { IS_PLATFORM, DISABLE_LOCAL_AUTH } from '../../../constants/config';
 import { api } from '../../../utils/api';
 import { AUTH_ERROR_MESSAGES, AUTH_TOKEN_STORAGE_KEY } from '../constants';
 import type {
@@ -123,22 +122,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [checkOnboardingStatus, clearSession, token]);
 
   useEffect(() => {
-    if (IS_PLATFORM || DISABLE_LOCAL_AUTH) {
-      setUser({ username: DISABLE_LOCAL_AUTH ? 'local-user' : 'platform-user' });
-      setNeedsSetup(false);
-      setIsLoading(true);
-      checkOnboardingStatus().finally(() => setIsLoading(false));
-      return;
-    }
-
     void checkAuthStatus();
-  }, [checkAuthStatus, checkOnboardingStatus]);
+  }, [checkAuthStatus]);
 
   const login = useCallback<AuthContextValue['login']>(
-    async (username, password) => {
+    async (email, password) => {
       try {
         setError(null);
-        const response = await api.auth.login(username, password);
+        const response = await api.auth.login(email, password);
         const payload = await parseJsonSafely<AuthSessionPayload>(response);
 
         if (!response.ok || !payload?.token || !payload.user) {
@@ -161,10 +152,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const register = useCallback<AuthContextValue['register']>(
-    async (username, password) => {
+    async (email, password, username) => {
       try {
         setError(null);
-        const response = await api.auth.register(username, password);
+        const response = await api.auth.register(email, password, username);
         const payload = await parseJsonSafely<AuthSessionPayload>(response);
 
         if (!response.ok || !payload?.token || !payload.user) {
@@ -197,10 +188,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [clearSession, token]);
 
-  const dingTalkLogin = useCallback(() => {
-    window.location.href = '/api/auth/dingtalk';
-  }, []);
-
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -212,7 +199,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       login,
       register,
       logout,
-      dingTalkLogin,
       refreshOnboardingStatus,
     }),
     [
@@ -221,7 +207,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isLoading,
       login,
       logout,
-      dingTalkLogin,
       needsSetup,
       refreshOnboardingStatus,
       register,

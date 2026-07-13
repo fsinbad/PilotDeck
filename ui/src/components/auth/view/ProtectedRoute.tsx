@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { DINGTALK_SSO_ENABLED } from '../../../constants/config';
 import { useAuth } from '../context/AuthContext';
 import Onboarding from '../../onboarding/view/Onboarding';
 import AuthLoadingScreen from './AuthLoadingScreen';
@@ -17,8 +16,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <AuthLoadingScreen />;
   }
 
-  // Skip the setup/registration flow when DingTalk SSO is the primary login method.
-  if (!DINGTALK_SSO_ENABLED && needsSetup) {
+  if (needsSetup) {
     return <SetupForm />;
   }
 

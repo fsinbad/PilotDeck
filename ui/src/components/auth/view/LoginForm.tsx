@@ -1,20 +1,18 @@
 import { useCallback, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DINGTALK_SSO_ENABLED } from '../../../constants/config';
 import { useAuth } from '../context/AuthContext';
 import AuthErrorAlert from './AuthErrorAlert';
 import AuthInputField from './AuthInputField';
 import AuthScreenLayout from './AuthScreenLayout';
-import DingTalkLoginButton from './DingTalkLoginButton';
 
 type LoginFormState = {
-  username: string;
+  email: string;
   password: string;
 };
 
 const initialState: LoginFormState = {
-  username: '',
+  email: '',
   password: '',
 };
 
@@ -22,9 +20,6 @@ const initialState: LoginFormState = {
  * Login form component.
  * Handles credential input with browser autofill support (`autocomplete`
  * attributes) so that password managers can offer to fill saved credentials.
- *
- * When DingTalk SSO is enabled, the username/password form is replaced with
- * a single DingTalk login button.
  */
 export default function LoginForm() {
   const { t } = useTranslation('auth');
@@ -38,38 +33,25 @@ export default function LoginForm() {
     setFormState((previous) => ({ ...previous, [field]: value }));
   }, []);
 
-  // When DingTalk SSO is enabled, show only the SSO button.
-  if (DINGTALK_SSO_ENABLED) {
-    return (
-      <AuthScreenLayout
-        title={t('login.title')}
-        description={t('login.description')}
-        footerText="Sign in with DingTalk to access NukemAI"
-      >
-        <DingTalkLoginButton />
-      </AuthScreenLayout>
-    );
-  }
-
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       setErrorMessage('');
 
       // Keep form validation local so each auth screen owns its own UI feedback.
-      if (!formState.username.trim() || !formState.password) {
+      if (!formState.email.trim() || !formState.password) {
         setErrorMessage(t('login.errors.requiredFields'));
         return;
       }
 
       setIsSubmitting(true);
-      const result = await login(formState.username.trim(), formState.password);
+      const result = await login(formState.email.trim(), formState.password);
       if (!result.success) {
         setErrorMessage(result.error);
       }
       setIsSubmitting(false);
     },
-    [formState.password, formState.username, login, t],
+    [formState.email, formState.password, login, t],
   );
 
   return (
@@ -80,13 +62,14 @@ export default function LoginForm() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthInputField
-          id="username"
+          id="email"
           label={t('login.username')}
-          value={formState.username}
-          onChange={(value) => updateField('username', value)}
+          value={formState.email}
+          onChange={(value) => updateField('email', value)}
           placeholder={t('login.placeholders.username')}
           isDisabled={isSubmitting}
-          autoComplete="username"
+          type="email"
+          autoComplete="email"
         />
 
         <AuthInputField

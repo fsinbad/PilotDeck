@@ -1,9 +1,9 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import { userDb, db } from '../database/db.js';
+import { userDb } from '../database/db.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 import { logAudit } from '../middleware/auditLog.js';
-import { DISABLE_LOCAL_AUTH, DINGTALK_SSO_ENABLED } from '../constants/config.js';
+import { DISABLE_LOCAL_AUTH } from '../constants/config.js';
 
 const router = express.Router();
 
@@ -15,14 +15,12 @@ router.get('/status', async (req, res) => {
         needsSetup: false,
         isAuthenticated: true,
         authDisabled: true,
-        dingtalkSsoEnabled: DINGTALK_SSO_ENABLED,
       });
     }
     const hasUsers = await userDb.hasUsers();
     res.json({ 
       needsSetup: !hasUsers,
       isAuthenticated: false, // Will be overridden by frontend if token exists
-      dingtalkSsoEnabled: DINGTALK_SSO_ENABLED,
     });
   } catch (error) {
     console.error('Auth status error:', error);
@@ -30,65 +28,62 @@ router.get('/status', async (req, res) => {
   }
 });
 
-// User registration (setup) - only allowed if no users exist
+// User registration (email-based)
 router.post('/register', async (req, res) => {
   try {
     if (DISABLE_LOCAL_AUTH) {
       return res.status(403).json({ error: 'Registration is disabled (NUKEMAI_DISABLE_LOCAL_AUTH)' });
     }
-    if (DINGTALK_SSO_ENABLED) {
-      return res.status(403).json({ error: 'Registration is disabled. Please use DingTalk SSO login.' });
-    }
-    const { username, password } = req.body;
+    const { email, password, username } = req.body;
     
     // Validate input
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
     
-    if (username.length < 3 || password.length < 6) {
-      return res.status(400).json({ error: 'Username must be at least 3 characters, password at least 6 characters' });
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
     }
     
-    // Use a transaction to prevent race conditions
-    db.prepare('BEGIN').run();
-    try {
-      // Check if users already exist (only allow one user)
-      const hasUsers = userDb.hasUsers();
-      if (hasUsers) {
-        db.prepare('ROLLBACK').run();
-        return res.status(403).json({ error: 'User already exists. This is a single-user system.' });
-      }
-      
-      // Hash password
-      const saltRounds = 12;
-      const passwordHash = await bcrypt.hash(password, saltRounds);
-      
-      // Create user
-      const user = userDb.createUser(username, passwordHash);
-      
-      // Generate token
-      const token = generateToken(user);
-      
-      db.prepare('COMMIT').run();
-
-      // Update last login (non-fatal, outside transaction)
-      userDb.updateLastLogin(user.id);
-
-      res.json({
-        success: true,
-        user: { id: user.id, username: user.username },
-        token
-      });
-    } catch (error) {
-      db.prepare('ROLLBACK').run();
-      throw error;
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
+    
+    // Check if email is already registered
+    const existingUser = userDb.getUserByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+    
+    // Hash password
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+    
+    // Create user
+    const user = userDb.createEmailUser({ 
+      email, 
+      passwordHash, 
+      username: username || email.split('@')[0] 
+    });
+    
+    // Generate token
+    const token = generateToken(user);
+    
+    // Update last login (non-fatal)
+    userDb.updateLastLogin(user.id);
+
+    res.json({
+      success: true,
+      user: { id: user.id, username: user.username, email: user.email },
+      token
+    });
     
   } catch (error) {
     console.error('Registration error:', error);
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      res.status(409).json({ error: 'Username already exists' });
+      res.status(409).json({ error: 'Email already registered' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -101,23 +96,23 @@ router.post('/login', async (req, res) => {
     if (DISABLE_LOCAL_AUTH) {
       return res.status(403).json({ error: 'Login is disabled (NUKEMAI_DISABLE_LOCAL_AUTH)' });
     }
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     
     // Validate input
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
     
     // Get user from database
-    const user = userDb.getUserByUsername(username);
+    const user = userDb.getUserByEmail(email);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
     
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid username or password' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
     
     // Generate token
@@ -126,11 +121,11 @@ router.post('/login', async (req, res) => {
     // Update last login
     userDb.updateLastLogin(user.id);
     
-    logAudit(req, 'login', 'user', user.id, { username: user.username });
+    logAudit(req, 'login', 'user', user.id, { email: user.email });
 
     res.json({
       success: true,
-      user: { id: user.id, username: user.username },
+      user: { id: user.id, username: user.username, email: user.email },
       token
     });
     
