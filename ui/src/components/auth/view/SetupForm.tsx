@@ -1,8 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
-import nukemaiLogoDark from '../../../assets/nukemai-wordmark-dark.png';
-import nukemaiLogoLight from '../../../assets/nukemai-wordmark-light.png';
 import AuthErrorAlert from './AuthErrorAlert';
 import AuthInputField from './AuthInputField';
 import AuthScreenLayout from './AuthScreenLayout';
@@ -94,22 +92,6 @@ export default function SetupForm() {
       title="Welcome to NukemAI"
       description="Set up your account to get started"
       footerText="Create your account to get started"
-      logo={
-        <div className="flex items-center justify-center gap-2">
-          <img
-            src={nukemaiLogoLight}
-            alt="NukemAI"
-            className="h-14 w-auto max-w-72 select-none object-contain dark:hidden"
-            draggable={false}
-          />
-          <img
-            src={nukemaiLogoDark}
-            alt="NukemAI"
-            className="hidden h-14 w-auto max-w-72 select-none object-contain dark:block"
-            draggable={false}
-          />
-        </div>
-      }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <AuthInputField
