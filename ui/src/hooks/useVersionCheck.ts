@@ -23,7 +23,7 @@ const compareVersions = (v1: string, v2: string) => {
 
 export type InstallMode = 'git' | 'npm';
 
-export const useVersionCheck = (owner: string, repo: string) => {
+export const useVersionCheck = (_owner: string, _repo: string) => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
@@ -45,44 +45,11 @@ export const useVersionCheck = (owner: string, repo: string) => {
   }, []);
 
   useEffect(() => {
-    const checkVersion = async () => {
-      try {
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-        const data = await response.json();
-
-        // Handle the case where there might not be any releases
-        if (data.tag_name) {
-          const latest = data.tag_name.replace(/^v/, '');
-          setLatestVersion(latest);
-          // Only show update if latest version is actually newer
-          setUpdateAvailable(compareVersions(latest, version) > 0);
-
-          // Store release information
-          setReleaseInfo({
-            title: data.name || data.tag_name,
-            body: data.body || '',
-            htmlUrl: data.html_url || `https://github.com/${owner}/${repo}/releases/latest`,
-            publishedAt: data.published_at
-          });
-        } else {
-          // No releases found, don't show update notification
-          setUpdateAvailable(false);
-          setLatestVersion(null);
-          setReleaseInfo(null);
-        }
-      } catch (error) {
-        console.error('Version check failed:', error);
-        // On error, don't show update notification
-        setUpdateAvailable(false);
-        setLatestVersion(null);
-        setReleaseInfo(null);
-      }
-    };
-
-    checkVersion();
-    const interval = setInterval(checkVersion, 5 * 60 * 1000); // Check every 5 minutes
-    return () => clearInterval(interval);
-  }, [owner, repo]);
+    // Version check disabled - no external API calls
+    setUpdateAvailable(false);
+    setLatestVersion(null);
+    setReleaseInfo(null);
+  }, []);
 
   return { updateAvailable, latestVersion, currentVersion: version, releaseInfo, installMode };
 }; 
