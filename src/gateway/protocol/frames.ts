@@ -42,6 +42,7 @@ export type WsGatewayMethod =
   | "list_projects"
   | "describe_project"
   | "reload_config"
+  | "prepare_weixin_login"
   | "reload_extensions"
   | "skill_list"
   | "skill_read"
